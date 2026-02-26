@@ -60,6 +60,25 @@
 				{/if}
 			</div>
 
+			<!-- Active Challenges -->
+			{#if data.activeChallenges.length > 0}
+				<div class="glass-card p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h3 class="text-sm font-display font-semibold text-text">Challenges</h3>
+						<a href="/challenges" class="text-xs text-text-secondary hover:text-primary-light transition-colors">View all &rarr;</a>
+					</div>
+					<div class="space-y-3">
+						{#each data.activeChallenges as challenge}
+							{@const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
+							<a href="/challenges" class="block group">
+								<p class="text-sm text-text group-hover:text-primary-light transition-colors">{challenge.title}</p>
+								<p class="text-xs text-text-muted">{daysLeft > 0 ? `${daysLeft}d remaining` : 'Ended'}</p>
+							</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			<!-- Recent -->
 			<div class="glass-card p-6">
 				<h3 class="text-sm font-display font-semibold text-text mb-4">Recent</h3>

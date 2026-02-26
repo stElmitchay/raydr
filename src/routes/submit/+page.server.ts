@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { CLAIM_FULFILL_XP_REWARD } from '$lib/constants';
+import { CLAIM_FULFILL_XP_REWARD, SUBMIT_PROJECT_XP } from '$lib/constants';
 
 export const load: PageServerLoad = async ({ locals: { session, supabase } }) => {
 	if (!session) {
@@ -52,12 +52,50 @@ export const actions: Actions = {
 		const estimated_hours_saved_weekly = Number(formData.get('estimated_hours_saved_weekly')) || 0;
 		const demo_url = formData.get('demo_url') as string;
 		const repo_url = formData.get('repo_url') as string;
+		const video_url = formData.get('video_url') as string;
 		const tech_stack = (formData.get('tech_stack') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
 		const ai_tools_used = (formData.get('ai_tools_used') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
 		const tool_request_id = (formData.get('tool_request_id') as string) || null;
 
 		if (!title || !description || !problem_statement || !solution_summary) {
 			return fail(400, { error: 'Title, description, problem, and solution are required' });
+		}
+
+		// Handle screenshot uploads
+		const screenshotFiles = formData.getAll('screenshots') as File[];
+		const validFiles = screenshotFiles.filter(f => f instanceof File && f.size > 0);
+		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+		const maxFileSize = 5 * 1024 * 1024; // 5MB
+
+		if (validFiles.length > 5) {
+			return fail(400, { error: 'Maximum 5 screenshots allowed' });
+		}
+
+		const screenshot_urls: string[] = [];
+		for (const file of validFiles) {
+			if (!allowedTypes.includes(file.type)) {
+				return fail(400, { error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, GIF` });
+			}
+			if (file.size > maxFileSize) {
+				return fail(400, { error: `File too large (max 5MB): ${file.name}` });
+			}
+
+			const ext = file.name.split('.').pop() || 'png';
+			const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+			const { error: uploadError } = await supabase.storage
+				.from('project-media')
+				.upload(path, file, { contentType: file.type });
+
+			if (uploadError) {
+				return fail(500, { error: `Upload failed: ${uploadError.message}` });
+			}
+
+			const { data: publicUrl } = supabase.storage
+				.from('project-media')
+				.getPublicUrl(path);
+
+			screenshot_urls.push(publicUrl.publicUrl);
 		}
 
 		// Get active season and calculate current week
@@ -87,6 +125,8 @@ export const actions: Actions = {
 			repo_url: repo_url || null,
 			tech_stack,
 			ai_tools_used,
+			screenshot_urls,
+			video_url: video_url || null,
 			submitted_by: session.user.id,
 			season: seasonId,
 			week,
@@ -95,6 +135,10 @@ export const actions: Actions = {
 		}).select().single();
 
 		if (error) return fail(500, { error: error.message });
+
+		// Award XP for submitting a project and update streak
+		await supabase.rpc('add_xp', { user_id: session.user.id, amount: SUBMIT_PROJECT_XP });
+		await supabase.rpc('calculate_streak', { p_user_id: session.user.id });
 
 		// If this project fulfills a claimed request, mark it completed and award XP (base + bounty)
 		if (tool_request_id) {

@@ -37,6 +37,34 @@
 
 	const sortedDepts = $derived(data.departmentStats.slice().sort((a: any, b: any) => (b.total_cost_saved ?? 0) - (a.total_cost_saved ?? 0)));
 	const maxDeptCost = $derived(Math.max(1, ...sortedDepts.map((d: any) => d.total_cost_saved ?? 0)));
+
+	// AI Tool x Department heatmap
+	const heatmapData = $derived.by(() => {
+		const matrix: Record<string, Record<string, number>> = {};
+		const allTools = new Set<string>();
+		const allDepts = new Set<string>();
+
+		for (const p of data.projectsWithDept ?? []) {
+			const dept = (p.submitter as any)?.department || 'Unknown';
+			allDepts.add(dept);
+			for (const tool of p.ai_tools_used ?? []) {
+				allTools.add(tool);
+				if (!matrix[dept]) matrix[dept] = {};
+				matrix[dept][tool] = (matrix[dept][tool] || 0) + 1;
+			}
+		}
+
+		const departments = Array.from(allDepts).sort();
+		const tools = Array.from(allTools).sort();
+		let maxCount = 0;
+		for (const dept of departments) {
+			for (const tool of tools) {
+				maxCount = Math.max(maxCount, matrix[dept]?.[tool] ?? 0);
+			}
+		}
+
+		return { departments, tools, matrix, maxCount: Math.max(1, maxCount) };
+	});
 </script>
 
 <div class="space-y-8">
@@ -161,4 +189,38 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- AI Tool Adoption by Department Heatmap -->
+	{#if heatmapData.tools.length > 0 && heatmapData.departments.length > 0}
+		<div class="glass-card p-6">
+			<h3 class="text-sm font-display font-semibold text-text mb-5">AI Tool Adoption by Department</h3>
+			<div class="overflow-x-auto">
+				<div class="inline-grid gap-1" style="grid-template-columns: 120px repeat({heatmapData.tools.length}, minmax(60px, 1fr));">
+					<!-- Header row -->
+					<div></div>
+					{#each heatmapData.tools as tool}
+						<div class="text-xs text-text-muted text-center truncate px-1" title={tool}>{tool}</div>
+					{/each}
+
+					<!-- Data rows -->
+					{#each heatmapData.departments as dept}
+						<div class="text-xs text-text-secondary truncate flex items-center pr-2" title={dept}>{dept}</div>
+						{#each heatmapData.tools as tool}
+							{@const count = heatmapData.matrix[dept]?.[tool] ?? 0}
+							{@const intensity = count / heatmapData.maxCount}
+							<div
+								class="h-10 rounded-md flex items-center justify-center transition-all duration-200 hover:ring-1 hover:ring-white/20"
+								style="background-color: rgba(139, 92, 246, {intensity > 0 ? Math.max(0.1, intensity) : 0.02})"
+								title="{dept}: {tool} ({count})"
+							>
+								{#if count > 0}
+									<span class="text-xs font-mono font-bold text-white">{count}</span>
+								{/if}
+							</div>
+						{/each}
+					{/each}
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>

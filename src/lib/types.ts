@@ -79,6 +79,36 @@ export interface ToolRequest {
 	created_at: string;
 }
 
+export interface Comment {
+	id: string;
+	project_id: string;
+	user_id: string;
+	content: string;
+	created_at: string;
+	commenter?: Profile;
+}
+
+export interface Adoption {
+	id: string;
+	project_id: string;
+	user_id: string;
+	adopted_at: string;
+	adopter?: Profile;
+}
+
+export interface Challenge {
+	id: string;
+	season?: number;
+	title: string;
+	description: string;
+	metric: 'cost_saved' | 'projects' | 'hours_saved';
+	target: number;
+	start_date: string;
+	end_date: string;
+	is_active: boolean;
+	created_at: string;
+}
+
 export interface WeeklyStats {
 	week: number;
 	season: number;

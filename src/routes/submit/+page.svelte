@@ -24,6 +24,7 @@
 
 	<form
 		method="POST"
+		enctype="multipart/form-data"
 		use:enhance={() => {
 			submitting = true;
 			return async ({ update }) => {
@@ -104,6 +105,27 @@
 					<label for="repo_url" class={labelClass}>Repo URL</label>
 					<input id="repo_url" name="repo_url" type="url" placeholder="https://github.com/..." class={inputClass} />
 				</div>
+			</div>
+		</div>
+
+		<div class="glass-card p-6 space-y-4">
+			<h3 class="text-sm font-display font-semibold text-text">Media</h3>
+			<div>
+				<label for="screenshots" class={labelClass}>Screenshots</label>
+				<input
+					id="screenshots"
+					name="screenshots"
+					type="file"
+					multiple
+					accept="image/jpeg,image/png,image/webp,image/gif"
+					class="glass-input w-full px-4 py-2.5 text-sm text-text file:mr-3 file:px-3 file:py-1 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary/20 file:text-primary-light hover:file:bg-primary/30 file:cursor-pointer file:transition-colors"
+				/>
+				<p class="text-xs text-text-muted mt-1">Up to 5 images (JPEG, PNG, WebP, GIF). Max 5MB each.</p>
+			</div>
+			<div>
+				<label for="video_url" class={labelClass}>Video URL</label>
+				<input id="video_url" name="video_url" type="url" placeholder="https://youtube.com/watch?v=... or https://loom.com/..." class={inputClass} />
+				<p class="text-xs text-text-muted mt-1">YouTube or Loom link</p>
 			</div>
 		</div>
 
