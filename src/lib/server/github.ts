@@ -250,6 +250,49 @@ export async function createPullRequest(
 	return res.json();
 }
 
+export async function getRepoTree(
+	token: string,
+	owner: string,
+	repo: string,
+	branch: string
+): Promise<string[]> {
+	const res = await fetch(
+		`${GITHUB_API}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+		{ headers: headers(token) }
+	);
+
+	if (!res.ok) {
+		throw new GitHubError(res.status, `Failed to fetch repo tree: ${res.statusText}`);
+	}
+
+	const data = await res.json();
+	return (data.tree ?? [])
+		.filter((item: any) => item.type === 'blob')
+		.map((item: any) => item.path as string);
+}
+
+export async function getFileContent(
+	token: string,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string
+): Promise<string | null> {
+	const url = ref
+		? `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${ref}`
+		: `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`;
+
+	const res = await fetch(url, {
+		headers: {
+			...headers(token),
+			Accept: 'application/vnd.github.raw+json'
+		}
+	});
+
+	if (!res.ok) return null;
+	return res.text();
+}
+
 export async function getLicenseInfo(
 	token: string,
 	owner: string,

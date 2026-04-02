@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { CLAIM_FULFILL_XP_REWARD, SUBMIT_PROJECT_XP } from '$lib/constants';
+import { triggerBackgroundAnalysis } from '$lib/server/analyze';
 
 export const load: PageServerLoad = async ({ locals: { session, supabase } }) => {
 	if (!session) {
@@ -179,6 +180,9 @@ export const actions: Actions = {
 			const totalReward = CLAIM_FULFILL_XP_REWARD + (fulfilledReq?.bonus_xp ?? 0);
 			await supabase.rpc('add_xp', { user_id: session.user.id, amount: totalReward });
 		}
+
+		// Fire background AI analysis (non-blocking)
+		triggerBackgroundAnalysis(data.id, session.user.id);
 
 		throw redirect(303, `/projects/${data.id}`);
 	}

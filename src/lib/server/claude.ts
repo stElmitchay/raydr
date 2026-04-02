@@ -6,6 +6,7 @@ interface AnalysisInput {
 	commits: CommitData[];
 	repoInfo: RepoInfo;
 	previousAnalysis?: { milestones: string[]; analyzed_at: string } | null;
+	pendingSteps?: Array<{ title: string; description: string }>;
 	projectContext: {
 		title: string;
 		description: string;
@@ -35,6 +36,7 @@ export interface AnalysisResult {
 	total_suggested_xp: number;
 	milestones: MilestoneResult[];
 	next_steps: NextStepResult[];
+	fulfilled_step_titles: string[];
 }
 
 export async function callClaude(system: string, userMessage: string): Promise<string> {
@@ -71,6 +73,8 @@ Total suggested XP must not exceed ${AI_XP_CAP_PER_CYCLE}.
 
 Also generate 3-5 recommended next steps for the upcoming demo cycle. Each should be an actionable goal the developer could achieve. Estimate XP based on difficulty/impact (${AI_XP_PER_MILESTONE_MIN}-${AI_XP_PER_MILESTONE_MAX}).
 
+You may also receive a list of pending goals from the previous cycle. Check if the commits fulfill any of these goals. Return the EXACT titles of fulfilled goals in fulfilled_step_titles.
+
 Return ONLY a JSON object (no markdown code fences) with this exact structure:
 {
   "summary": "human-readable progress overview (2-3 sentences)",
@@ -91,7 +95,8 @@ Return ONLY a JSON object (no markdown code fences) with this exact structure:
       "category": "feature|bugfix|docs|refactor|test|infra|other",
       "estimated_xp": <number>
     }
-  ]
+  ],
+  "fulfilled_step_titles": ["exact title of any fulfilled pending goal"]
 }`;
 
 	const commitSummary = input.commits.slice(0, 30).map(c =>
@@ -117,8 +122,10 @@ Stars: ${input.repoInfo.stargazers_count}
 ${commitSummary || 'No commits found in this period.'}
 
 ${input.previousAnalysis ? `## Previous Milestones (already counted)\n${input.previousAnalysis.milestones.join(', ')}` : '## First analysis — no previous milestones.'}
+
+${input.pendingSteps?.length ? `## Pending Goals (check if commits fulfill any)\n${input.pendingSteps.map(s => `- "${s.title}": ${s.description}`).join('\n')}` : '## No pending goals from previous cycle.'}
 ${dpgSection}
-Analyze the commits and identify NEW milestones achieved. Do not repeat milestones from previous analyses. Then suggest next steps for the upcoming demo cycle.`;
+Analyze the commits and identify NEW milestones achieved. Do not repeat milestones from previous analyses. Check if any pending goals were fulfilled. Then suggest next steps for the upcoming demo cycle.`;
 
 	const response = await callClaude(system, userMessage);
 
@@ -141,6 +148,9 @@ Analyze the commits and identify NEW milestones achieved. Do not repeat mileston
 		...s,
 		estimated_xp: Math.max(AI_XP_PER_MILESTONE_MIN, Math.min(AI_XP_PER_MILESTONE_MAX, s.estimated_xp))
 	}));
+
+	// Ensure fulfilled_step_titles is always an array
+	result.fulfilled_step_titles = result.fulfilled_step_titles || [];
 
 	return result;
 }

@@ -1,36 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#a78bfa"/>
-      <stop offset="50%" stop-color="#8b5cf6"/>
-      <stop offset="100%" stop-color="#6d28d9"/>
-    </linearGradient>
-    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#c4b5fd"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
-    </linearGradient>
-  </defs>
-  <!-- Globe circle -->
-  <circle cx="64" cy="64" r="60" fill="url(#g1)"/>
-  <!-- Outer ring glow -->
-  <circle cx="64" cy="64" r="60" fill="none" stroke="#c4b5fd" stroke-width="2" opacity="0.5"/>
-  <!-- Horizontal lines (latitude) -->
-  <ellipse cx="64" cy="36" rx="50" ry="4" fill="none" stroke="#e9d5ff" stroke-width="1.5" opacity="0.4"/>
-  <ellipse cx="64" cy="64" rx="56" ry="4" fill="none" stroke="#e9d5ff" stroke-width="1.5" opacity="0.5"/>
-  <ellipse cx="64" cy="92" rx="50" ry="4" fill="none" stroke="#e9d5ff" stroke-width="1.5" opacity="0.4"/>
-  <!-- Vertical meridian (center) -->
-  <ellipse cx="64" cy="64" rx="24" ry="58" fill="none" stroke="#e9d5ff" stroke-width="1.8" opacity="0.5"/>
-  <!-- Vertical meridian (offset left) -->
-  <ellipse cx="64" cy="64" rx="46" ry="58" fill="none" stroke="#e9d5ff" stroke-width="1.2" opacity="0.3"/>
-  <!-- Vertical meridian (offset right) -->
-  <ellipse cx="64" cy="64" rx="8" ry="58" fill="none" stroke="#e9d5ff" stroke-width="1.2" opacity="0.3"/>
-  <!-- Continents stylized shapes -->
-  <path d="M38 30 Q44 26 52 28 Q56 32 50 38 Q44 42 36 38 Q32 34 38 30Z" fill="#c4b5fd" opacity="0.5"/>
-  <path d="M68 34 Q78 30 86 36 Q90 44 84 50 Q76 52 70 46 Q64 40 68 34Z" fill="#ddd6fe" opacity="0.45"/>
-  <path d="M30 56 Q38 50 48 54 Q54 62 46 68 Q38 72 30 66 Q26 60 30 56Z" fill="#c4b5fd" opacity="0.4"/>
-  <path d="M62 60 Q72 54 82 58 Q88 66 80 74 Q72 78 64 72 Q58 66 62 60Z" fill="#ddd6fe" opacity="0.4"/>
-  <path d="M44 78 Q54 74 62 80 Q66 88 58 92 Q48 94 42 88 Q38 82 44 78Z" fill="#c4b5fd" opacity="0.45"/>
-  <path d="M76 76 Q84 72 90 78 Q92 84 86 88 Q80 90 76 84 Q74 80 76 76Z" fill="#ddd6fe" opacity="0.35"/>
-  <!-- Shine/highlight -->
-  <ellipse cx="44" cy="38" rx="20" ry="24" fill="white" opacity="0.08"/>
+  <!-- Dark warm background -->
+  <rect width="128" height="128" fill="#0C0B09"/>
+  <!-- Thin border -->
+  <rect x="2" y="2" width="124" height="124" fill="none" stroke="#2A2621" stroke-width="2"/>
+  <!-- Serif "S" in warm cream -->
+  <text x="64" y="96" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="88" font-weight="400" fill="#E8E2D9">S</text>
 </svg>

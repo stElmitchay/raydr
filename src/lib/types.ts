@@ -6,6 +6,7 @@ export interface Profile {
 	department: string;
 	title?: string;
 	role: 'internal' | 'community';
+	is_admin: boolean;
 	github_username?: string;
 	github_connected: boolean;
 	total_xp: number;
@@ -193,9 +194,13 @@ export interface NextStep {
 	title: string;
 	description: string;
 	category: MilestoneCategory;
+	source: 'ai' | 'manual';
 	estimated_xp: number;
 	completed: boolean;
 	completed_at?: string;
+	fulfilled_by_analysis?: string;
+	implementation_status: 'pending' | 'in_progress' | 'implemented' | 'failed';
+	pr_url?: string;
 	created_at: string;
 }
 
@@ -207,6 +212,15 @@ export interface DPGEvaluation {
 		status: 'pass' | 'fail' | 'partial' | 'unknown';
 		reasoning: string;
 	}>;
+}
+
+export interface CycleTheme {
+	id: string;
+	demo_cycle: number;
+	season?: number;
+	name: string;
+	description: string;
+	generated_at: string;
 }
 
 export interface Newsletter {

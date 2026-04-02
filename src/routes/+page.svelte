@@ -6,6 +6,7 @@
 	let { data } = $props();
 	let showAnalytics = $state(false);
 
+	// Analytics computations
 	const weeklyData = $derived.by(() => {
 		const weeks: Record<number, { week: number; submissions: number; costSaved: number }> = {};
 		for (const p of data.allProjects ?? []) {
@@ -43,7 +44,7 @@
 	const maxDeptCost = $derived(Math.max(1, ...sortedDepts.map((d: any) => d.total_cost_saved ?? 0)));
 </script>
 
-<!-- Hero Section — full viewport -->
+<!-- Hero Section -->
 <section class="min-h-[85vh] flex flex-col justify-end px-6 md:px-10 lg:px-16 pb-12 relative">
 	<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
 		<!-- Main Metric -->
@@ -51,8 +52,12 @@
 			<HeroCounter targetValue={data.totals?.total_cost_saved ?? 0} label="Total cost saved" />
 		</div>
 
-		<!-- Demo Day Countdown -->
+		<!-- Demo Countdown + Cycle Theme -->
 		<div class="animate-fade-up stagger-2 text-right">
+			{#if data.cycleTheme}
+				<p class="font-serif text-lg italic text-text-secondary">{data.cycleTheme.name}</p>
+				<p class="text-xs text-text-muted mt-0.5 mb-4 max-w-[250px] ml-auto">{data.cycleTheme.description}</p>
+			{/if}
 			<span class="text-data text-5xl md:text-6xl text-text">{data.daysUntilDemo}</span>
 			<p class="heading-section mt-2">Days until demo</p>
 			<p class="text-xs text-text-muted mt-1">
@@ -186,7 +191,7 @@
 	</section>
 </ScrollReveal>
 
-<!-- Inline Analytics -->
+<!-- Inline Analytics (Collapsible) -->
 <ScrollReveal>
 	<section class="px-6 md:px-10 lg:px-16 py-12 border-t border-border">
 		<button
@@ -199,7 +204,6 @@
 
 		{#if showAnalytics}
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-8">
-				<!-- Cumulative Cost Saved -->
 				<div>
 					<h3 class="heading-section mb-5">Cumulative Cost Saved</h3>
 					{#if cumulativeData.length > 0}
@@ -208,10 +212,7 @@
 								<div class="flex items-center gap-3">
 									<span class="text-xs text-data text-text-muted w-8">D{d.week}</span>
 									<div class="flex-1 h-5 bg-surface-alt overflow-hidden">
-										<div
-											class="h-full bg-text transition-all duration-500"
-											style="width: {Math.max(4, (d.total / maxCumulative) * 100)}%"
-										></div>
+										<div class="h-full bg-text transition-all duration-500" style="width: {Math.max(4, (d.total / maxCumulative) * 100)}%"></div>
 									</div>
 									<span class="text-xs text-data text-text-secondary w-14 text-right">${(d.total / 1000).toFixed(0)}K</span>
 								</div>
@@ -222,7 +223,6 @@
 					{/if}
 				</div>
 
-				<!-- Submissions per Cycle -->
 				<div>
 					<h3 class="heading-section mb-5">Submissions per Cycle</h3>
 					{#if weeklyData.length > 0}
@@ -231,10 +231,7 @@
 								<div class="flex-1 flex flex-col items-center gap-1">
 									<span class="text-xs text-data text-text">{d.submissions}</span>
 									<div class="w-full flex justify-center">
-										<div
-											class="w-full max-w-[32px] bg-text transition-all duration-500"
-											style="height: {Math.max(3, (d.submissions / maxSubmissions) * 110)}px"
-										></div>
+										<div class="w-full max-w-[32px] bg-text transition-all duration-500" style="height: {Math.max(3, (d.submissions / maxSubmissions) * 110)}px"></div>
 									</div>
 									<span class="text-xs text-data text-text-muted">D{d.week}</span>
 								</div>
@@ -245,7 +242,6 @@
 					{/if}
 				</div>
 
-				<!-- AI Tools -->
 				<div>
 					<h3 class="heading-section mb-5">AI Tool Usage</h3>
 					{#if aiToolCounts.length > 0}
@@ -254,10 +250,7 @@
 								<div class="flex items-center gap-3">
 									<span class="text-xs text-text w-28 truncate flex-shrink-0">{tool}</span>
 									<div class="flex-1 h-4 bg-surface-alt overflow-hidden">
-										<div
-											class="h-full bg-text/60 transition-all duration-300"
-											style="width: {Math.max(8, (count / maxToolCount) * 100)}%"
-										></div>
+										<div class="h-full bg-text/60 transition-all duration-300" style="width: {Math.max(8, (count / maxToolCount) * 100)}%"></div>
 									</div>
 									<span class="text-xs text-data text-text-muted w-6 text-right">{count}</span>
 								</div>
@@ -268,7 +261,6 @@
 					{/if}
 				</div>
 
-				<!-- Departments -->
 				<div>
 					<h3 class="heading-section mb-5">Department Breakdown</h3>
 					{#if sortedDepts.length > 0}
@@ -280,10 +272,7 @@
 										<span class="text-xs text-data text-positive">${((dept.total_cost_saved ?? 0) / 1000).toFixed(0)}K</span>
 									</div>
 									<div class="h-3 bg-surface-alt overflow-hidden">
-										<div
-											class="h-full bg-text/40 transition-all duration-300"
-											style="width: {Math.max(4, ((dept.total_cost_saved ?? 0) / maxDeptCost) * 100)}%"
-										></div>
+										<div class="h-full bg-text/40 transition-all duration-300" style="width: {Math.max(4, ((dept.total_cost_saved ?? 0) / maxDeptCost) * 100)}%"></div>
 									</div>
 									<div class="flex justify-between text-[11px] text-text-muted mt-0.5">
 										<span class="text-data">{dept.total_projects} projects &middot; {dept.active_builders} builders</span>

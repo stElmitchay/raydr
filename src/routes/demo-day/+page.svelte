@@ -41,8 +41,9 @@
 			</div>
 			<h1 class="text-4xl md:text-5xl font-display font-bold text-text tracking-tighter">Demo Day</h1>
 			<p class="text-lg text-text-secondary mt-2">
-				Cycle {data.demoCycle}{data.season ? ` · ${data.season.name}` : ''} · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+				{#if data.cycleTheme}<span class="italic">{data.cycleTheme.name}</span> &middot; {/if}Cycle {data.demoCycle}{data.season ? ` · ${data.season.name}` : ''}
 			</p>
+			<p class="text-sm text-text-muted mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
 		</div>
 	</div>
 

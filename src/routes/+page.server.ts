@@ -1,21 +1,32 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getNextDemoDay, daysUntilDemoDay } from '$lib/server/demo-cycle';
+import { getNextDemoDay, daysUntilDemoDay, getCurrentDemoCycle } from '$lib/server/demo-cycle';
 import { isDemoDay } from '$lib/server/demo-day';
+import { getCycleTheme } from '$lib/server/cycle-theme';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	// Redirect to demo day page on demo day
 	if (isDemoDay()) {
 		throw redirect(302, '/demo-day');
 	}
 
+	const { data: season } = await supabase
+		.from('seasons')
+		.select('*')
+		.eq('is_active', true)
+		.single();
+
+	const currentCycle = season
+		? getCurrentDemoCycle(new Date(season.start_date))
+		: 1;
+
 	const [
-		{ data: projects },
+		{ data: featuredProjects },
 		{ data: departmentStats },
 		{ data: recentProjects },
 		{ data: activeChallenges },
 		{ data: allProjects },
-		{ data: projectsWithDept }
+		{ data: projectsWithDept },
+		cycleTheme
 	] = await Promise.all([
 		supabase
 			.from('projects')
@@ -34,20 +45,23 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.eq('is_active', true)
 			.order('end_date', { ascending: true })
 			.limit(3),
-		// Analytics data
 		supabase
 			.from('projects')
 			.select('week, demo_cycle, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used')
 			.order('created_at', { ascending: true }),
 		supabase
 			.from('projects')
-			.select('ai_tools_used, submitter:profiles!submitted_by(department)')
+			.select('ai_tools_used, submitter:profiles!submitted_by(department)'),
+		getCycleTheme(supabase, currentCycle, season?.id ?? null)
 	]);
 
 	const { data: totals } = await supabase.rpc('get_totals');
 
 	return {
-		featuredProjects: projects ?? [],
+		currentCycle,
+		season,
+		cycleTheme,
+		featuredProjects: featuredProjects ?? [],
 		departmentStats: departmentStats ?? [],
 		recentProjects: recentProjects ?? [],
 		activeChallenges: activeChallenges ?? [],
