@@ -32,7 +32,7 @@
 
 <div class="flex flex-col">
 	<span
-		class="heading-display text-[clamp(3rem,8vw,6rem)] text-text"
+		class="heading-display text-[clamp(3.5rem,10vw,7rem)] text-text"
 		style="animation: metric-pulse 4s ease-in-out infinite"
 	>
 		{formatValue(displayValue)}

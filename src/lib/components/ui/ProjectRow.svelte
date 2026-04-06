@@ -14,10 +14,10 @@
 <a href="/projects/{project.id}" class="editorial-row group">
 	<!-- Title + submitter -->
 	<div class="flex-1 min-w-0">
-		<h3 class="font-serif text-lg text-text group-hover:text-text truncate">
+		<h3 class="font-serif text-xl text-text group-hover:text-text truncate">
 			{project.title}
 		</h3>
-		<p class="text-xs text-text-muted mt-0.5">
+		<p class="text-sm text-text-secondary mt-0.5">
 			{project.submitter?.full_name ?? 'Anonymous'}
 			{#if project.submitter?.department}
 				<span class="text-text-muted/60">&middot; {project.submitter.department}</span>
@@ -36,7 +36,7 @@
 	</div>
 
 	<!-- Cost -->
-	<div class="text-data text-sm text-text-secondary flex-shrink-0 text-right w-24">
+	<div class="text-data text-base flex-shrink-0 text-right w-28 {project.annual_cost_replaced ? 'text-positive' : 'text-text-muted'}">
 		{formatCost(project.annual_cost_replaced)}
 	</div>
 </a>

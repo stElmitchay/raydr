@@ -8,16 +8,16 @@
 	--color-surface-hover: #22211E;
 
 	/* Text — light, warm cream */
-	--color-text: #E8E2D9;
-	--color-text-secondary: #9C9488;
-	--color-text-muted: #5C554C;
+	--color-text: #F0EBE3;
+	--color-text-secondary: #B5AFA6;
+	--color-text-muted: #7A7269;
 
-	/* Borders — subtle warm */
-	--color-border: #2A2621;
-	--color-border-strong: #3D3730;
+	/* Borders — warm, visible */
+	--color-border: #332E28;
+	--color-border-strong: #4A4339;
 
 	/* Accent — restrained, same as text for inversion buttons */
-	--color-accent: #E8E2D9;
+	--color-accent: #F0EBE3;
 	--color-accent-subtle: #1A1917;
 
 	/* Semantic */
@@ -28,7 +28,7 @@
 
 	/* Overlay — stays dark for dramatic full-screen menu */
 	--color-overlay: rgba(6, 5, 4, 0.97);
-	--color-overlay-text: #E8E2D9;
+	--color-overlay-text: #F0EBE3;
 
 	/* Typography */
 	--font-sans: 'Instrument Sans', system-ui, -apple-system, sans-serif;
@@ -42,6 +42,7 @@
 
 body {
 	font-family: var(--font-sans);
+	font-size: 1rem;
 	background: var(--color-bg);
 	color: var(--color-text);
 	-webkit-font-smoothing: antialiased;
@@ -61,30 +62,32 @@ body {
 
 .heading-page {
 	font-family: var(--font-serif);
-	font-size: 2.25rem;
+	font-size: 2.75rem;
 	font-weight: 400;
-	line-height: 1.15;
+	line-height: 1.12;
 	color: var(--color-text);
 }
 
 .heading-section {
 	font-family: var(--font-sans);
-	font-size: 0.6875rem;
+	font-size: 0.75rem;
 	font-weight: 600;
 	text-transform: uppercase;
-	letter-spacing: 0.15em;
-	color: var(--color-text-muted);
+	letter-spacing: 0.14em;
+	color: var(--color-text-secondary);
 }
 
 .text-body {
 	font-family: var(--font-sans);
-	font-size: 0.9375rem;
-	line-height: 1.6;
+	font-size: 1rem;
+	line-height: 1.7;
 	color: var(--color-text-secondary);
+	font-weight: 400;
 }
 
 .text-data {
 	font-family: var(--font-mono);
+	font-weight: 500;
 	font-variant-numeric: tabular-nums;
 }
 
@@ -112,9 +115,9 @@ body {
 	background: var(--color-text);
 	color: var(--color-bg);
 	font-family: var(--font-sans);
-	font-size: 0.875rem;
+	font-size: 0.9375rem;
 	font-weight: 500;
-	padding: 0.625rem 1.25rem;
+	padding: 0.75rem 1.5rem;
 	transition: background 150ms ease, opacity 150ms ease;
 }
 .btn-primary:hover {
@@ -136,9 +139,9 @@ body {
 	border: 1px solid var(--color-border-strong);
 	color: var(--color-text);
 	font-family: var(--font-sans);
-	font-size: 0.875rem;
+	font-size: 0.9375rem;
 	font-weight: 500;
-	padding: 0.625rem 1.25rem;
+	padding: 0.75rem 1.5rem;
 	transition: background 150ms ease, border-color 150ms ease;
 }
 .btn-secondary:hover {
@@ -155,9 +158,9 @@ body {
 	background: transparent;
 	border: 0;
 	border-bottom: 1px solid var(--color-border);
-	padding: 0.625rem 0;
+	padding: 0.75rem 0;
 	font-family: var(--font-sans);
-	font-size: 0.9375rem;
+	font-size: 1rem;
 	color: var(--color-text);
 	transition: border-color 200ms ease;
 	outline: none;
@@ -173,9 +176,9 @@ body {
 	width: 100%;
 	background: var(--color-surface);
 	border: 1px solid var(--color-border);
-	padding: 0.625rem 0.75rem;
+	padding: 0.75rem 0.875rem;
 	font-family: var(--font-sans);
-	font-size: 0.9375rem;
+	font-size: 1rem;
 	color: var(--color-text);
 	transition: border-color 200ms ease;
 	outline: none;
@@ -194,14 +197,14 @@ body {
 .tag {
 	display: inline-block;
 	font-family: var(--font-sans);
-	font-size: 0.6875rem;
-	font-weight: 500;
+	font-size: 0.75rem;
+	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	padding: 0.1875rem 0.5rem;
-	border: 1px solid var(--color-border);
-	color: var(--color-text-secondary);
-	background: var(--color-surface);
+	padding: 0.25rem 0.625rem;
+	border: 1px solid var(--color-border-strong);
+	color: var(--color-text);
+	background: var(--color-surface-alt);
 }
 
 .tag-positive {
@@ -236,7 +239,7 @@ body {
 .editorial-row {
 	display: flex;
 	align-items: center;
-	padding: 1rem 0;
+	padding: 1.25rem 0;
 	border-bottom: 1px solid var(--color-border);
 	transition: background 150ms ease, padding-left 200ms ease;
 	cursor: pointer;
@@ -278,6 +281,15 @@ body {
 	50% { opacity: 0.85; }
 }
 
+@keyframes watermark-drift {
+	0%, 100% { transform: translateY(-8%) rotate(-2deg) scale(1); }
+	50% { transform: translateY(-6%) rotate(-1.5deg) scale(1.01); }
+}
+
+.hero-watermark {
+	animation: watermark-drift 20s ease-in-out infinite;
+}
+
 @keyframes draw-underline {
 	from { background-size: 0% 1px; }
 	to { background-size: 100% 1px; }
@@ -310,15 +322,15 @@ body {
 
 /* Link underline animation */
 .link-draw {
-	background-image: linear-gradient(var(--color-text), var(--color-text));
+	background-image: linear-gradient(var(--color-text-secondary), var(--color-text-secondary));
 	background-position: 0% 100%;
 	background-repeat: no-repeat;
-	background-size: 0% 1px;
+	background-size: 0% 1.5px;
 	transition: background-size 250ms ease;
 	text-decoration: none;
 }
 .link-draw:hover {
-	background-size: 100% 1px;
+	background-size: 100% 1.5px;
 }
 
 /* ═══════════════════════════════════════════
@@ -425,8 +437,8 @@ body {
 .glass-input {
 	background: var(--color-surface);
 	border: 1px solid var(--color-border);
-	padding: 0.625rem 0.75rem;
-	font-size: 0.9375rem;
+	padding: 0.75rem 0.875rem;
+	font-size: 1rem;
 	color: var(--color-text);
 	transition: border-color 200ms ease;
 	outline: none;

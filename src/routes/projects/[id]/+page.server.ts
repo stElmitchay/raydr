@@ -169,6 +169,35 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	toggleFeatured: async ({ params, locals: { supabase, session } }) => {
+		if (!session) return fail(401, { error: 'Not authenticated' });
+
+		const { data: profile } = await supabase
+			.from('profiles')
+			.select('is_admin')
+			.eq('id', session.user.id)
+			.single();
+
+		if (!profile?.is_admin) return fail(403, { error: 'Only admins can feature projects' });
+
+		const { data: project } = await supabase
+			.from('projects')
+			.select('status')
+			.eq('id', params.id)
+			.single();
+
+		if (!project) return fail(404, { error: 'Project not found' });
+
+		const newStatus = project.status === 'featured' ? 'submitted' : 'featured';
+
+		await supabaseAdmin
+			.from('projects')
+			.update({ status: newStatus })
+			.eq('id', params.id);
+
+		return { success: true, featured: newStatus === 'featured' };
+	},
+
 	addMilestone: async ({ request, params, locals: { supabase, session } }) => {
 		if (!session) return fail(401, { error: 'Not authenticated' });
 

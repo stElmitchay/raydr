@@ -2,6 +2,7 @@
 	import HeroCounter from '$lib/components/ui/HeroCounter.svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
 	import ProjectRow from '$lib/components/ui/ProjectRow.svelte';
+	import NeuralAmbient from '$lib/components/ui/NeuralAmbient.svelte';
 
 	let { data } = $props();
 	let showAnalytics = $state(false);
@@ -42,47 +43,96 @@
 
 	const sortedDepts = $derived((data.departmentStats ?? []).slice().sort((a: any, b: any) => (b.total_cost_saved ?? 0) - (a.total_cost_saved ?? 0)));
 	const maxDeptCost = $derived(Math.max(1, ...sortedDepts.map((d: any) => d.total_cost_saved ?? 0)));
+
+	// Rotating editorial taglines
+	const taglines = [
+		'Build. Ship. Repeat.',
+		'What will you demo this month?',
+		'Every commit is a milestone.',
+		'The best time to ship was yesterday.',
+		'Progress is measured in demos.',
+	];
+	let taglineIndex = $state(0);
+
+	$effect(() => {
+		const interval = setInterval(() => {
+			taglineIndex = (taglineIndex + 1) % taglines.length;
+		}, 4000);
+		return () => clearInterval(interval);
+	});
 </script>
 
 <!-- Hero Section -->
-<section class="min-h-[85vh] flex flex-col justify-end px-6 md:px-10 lg:px-16 pb-12 relative">
-	<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
-		<!-- Main Metric -->
+<section class="min-h-[65vh] flex flex-col justify-end px-6 md:px-10 lg:px-16 pb-12 relative overflow-hidden">
+
+	<!-- Ambient neural network visualization -->
+	<NeuralAmbient />
+
+	<!-- Thin rule lines for editorial texture -->
+	<div class="absolute top-[18%] left-[8%] right-[8%] border-t border-text/[0.03]" aria-hidden="true"></div>
+	<div class="absolute top-[62%] left-[12%] right-[20%] border-t border-text/[0.02]" aria-hidden="true"></div>
+
+	<!-- Upper area: cycle identity + rotating tagline -->
+	<div class="relative z-10 mb-auto pt-8 md:pt-12">
 		<div class="animate-fade-up stagger-1">
-			<HeroCounter targetValue={data.totals?.total_cost_saved ?? 0} label="Total cost saved" />
+			<p class="text-data text-[10px] uppercase tracking-[0.3em] text-text-muted">
+				{data.season?.name ?? 'Season'} &mdash; Cycle {data.currentCycle}
+			</p>
+			{#if data.cycleTheme}
+				<h2 class="font-serif italic text-3xl md:text-4xl text-text mt-3" style="letter-spacing: -0.02em;">
+					{data.cycleTheme.name}
+				</h2>
+				<p class="text-sm text-text-muted mt-2 max-w-md">{data.cycleTheme.description}</p>
+			{/if}
 		</div>
 
-		<!-- Demo Countdown + Cycle Theme -->
-		<div class="animate-fade-up stagger-2 text-right">
-			{#if data.cycleTheme}
-				<p class="font-serif text-lg italic text-text-secondary">{data.cycleTheme.name}</p>
-				<p class="text-xs text-text-muted mt-0.5 mb-4 max-w-[250px] ml-auto">{data.cycleTheme.description}</p>
-			{/if}
-			<span class="text-data text-5xl md:text-6xl text-text">{data.daysUntilDemo}</span>
-			<p class="heading-section mt-2">Days until demo</p>
-			<p class="text-xs text-text-muted mt-1">
-				{new Date(data.nextDemoDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+		<!-- Rotating tagline -->
+		<div class="mt-10 animate-fade-up stagger-2">
+			<p
+				class="font-serif italic text-text-secondary text-lg md:text-xl transition-opacity duration-700"
+				style="min-height: 2em;"
+			>
+				{taglines[taglineIndex]}
 			</p>
 		</div>
 	</div>
 
-	<!-- Secondary Metrics -->
-	<div class="animate-fade-up stagger-3 mt-8 pt-6 border-t border-border flex flex-wrap gap-8 md:gap-16">
-		<div>
-			<span class="text-data text-2xl">{data.totals?.total_projects ?? 0}</span>
-			<p class="heading-section mt-1">Projects</p>
+	<!-- Bottom: metrics -->
+	<div class="relative z-10">
+		<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+			<!-- Main Metric -->
+			<div class="animate-fade-up stagger-2">
+				<HeroCounter targetValue={data.totals?.total_cost_saved ?? 0} label="Total cost saved" />
+			</div>
+
+			<!-- Demo Countdown -->
+			<div class="animate-fade-up stagger-3 text-right">
+				<span class="text-data text-5xl md:text-6xl text-text">{data.daysUntilDemo}</span>
+				<p class="heading-section mt-2">Days until demo</p>
+				<p class="text-sm text-text-muted mt-1">
+					{new Date(data.nextDemoDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+				</p>
+			</div>
 		</div>
-		<div>
-			<span class="text-data text-2xl">{data.totals?.total_hours_saved ?? 0}</span>
-			<p class="heading-section mt-1">Hours saved / week</p>
-		</div>
-		<div>
-			<span class="text-data text-2xl">{data.totals?.total_adoptions ?? 0}</span>
-			<p class="heading-section mt-1">Adoptions</p>
-		</div>
-		<div>
-			<span class="text-data text-2xl">{data.totals?.active_builders ?? 0}</span>
-			<p class="heading-section mt-1">Builders</p>
+
+		<!-- Secondary Metrics -->
+		<div class="animate-fade-up stagger-3 mt-8 pt-6 border-t border-border flex flex-wrap gap-10 md:gap-16">
+			<div>
+				<span class="text-data text-3xl">{data.totals?.total_projects ?? 0}</span>
+				<p class="heading-section mt-1.5">Projects</p>
+			</div>
+			<div>
+				<span class="text-data text-3xl">{data.totals?.total_hours_saved ?? 0}</span>
+				<p class="heading-section mt-1.5">Hours saved / week</p>
+			</div>
+			<div>
+				<span class="text-data text-3xl">{data.totals?.total_adoptions ?? 0}</span>
+				<p class="heading-section mt-1.5">Adoptions</p>
+			</div>
+			<div>
+				<span class="text-data text-3xl">{data.totals?.active_builders ?? 0}</span>
+				<p class="heading-section mt-1.5">Builders</p>
+			</div>
 		</div>
 	</div>
 </section>
@@ -92,7 +142,7 @@
 	<section class="px-6 md:px-10 lg:px-16 py-12">
 		<div class="flex items-baseline justify-between mb-6">
 			<h2 class="heading-page">Featured</h2>
-			<a href="/projects" class="text-sm text-text-secondary link-draw">View all</a>
+			<a href="/projects" class="text-base text-text-secondary link-draw">View all</a>
 		</div>
 
 		{#if data.featuredProjects.length > 0}
@@ -109,12 +159,12 @@
 							</div>
 						{:else}
 							<div class="w-full aspect-[16/9] bg-surface-alt mb-4 flex items-center justify-center">
-								<span class="text-text-muted text-sm">No preview</span>
+								<span class="text-text-muted text-base">No preview</span>
 							</div>
 						{/if}
-						<h3 class="font-serif text-xl text-text group-hover:text-text-secondary transition-colors">{project.title}</h3>
-						<p class="text-sm text-text-muted mt-1 line-clamp-2">{project.description}</p>
-						<div class="flex items-center gap-4 mt-3 text-data text-xs text-text-secondary">
+						<h3 class="font-serif text-2xl text-text group-hover:text-text-secondary transition-colors">{project.title}</h3>
+						<p class="text-base text-text-muted mt-2 line-clamp-2">{project.description}</p>
+						<div class="flex items-center gap-4 mt-3 text-data text-sm text-text-secondary">
 							{#if project.annual_cost_replaced}
 								<span>${(project.annual_cost_replaced / 1000).toFixed(0)}K/yr saved</span>
 							{/if}
@@ -127,8 +177,8 @@
 			</div>
 		{:else}
 			<div class="py-16 text-center border-t border-border">
-				<p class="text-text-muted text-sm">No featured projects yet.</p>
-				<a href="/submit" class="mt-2 inline-block text-sm text-text link-draw">Submit the first one</a>
+				<p class="text-text-muted text-base">No featured projects yet.</p>
+				<a href="/submit" class="mt-3 inline-block text-base text-text link-draw">Submit the first one</a>
 			</div>
 		{/if}
 	</section>
@@ -139,52 +189,52 @@
 	<section class="px-6 md:px-10 lg:px-16 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 border-t border-border">
 		<!-- Department Rankings -->
 		<div>
-			<h2 class="heading-section mb-6">Departments</h2>
+			<h2 class="heading-section mb-8">Departments</h2>
 			{#if data.departmentStats.length > 0}
 				<div class="space-y-0">
 					{#each data.departmentStats.slice(0, 7) as dept, i}
-						<div class="flex items-baseline py-3 {i > 0 ? 'border-t border-border' : ''}">
-							<span class="text-data text-xs text-text-muted w-6">{String(i + 1).padStart(2, '0')}</span>
-							<span class="font-serif text-lg text-text flex-shrink-0">{dept.department || 'Unset'}</span>
+						<div class="flex items-baseline py-4 {i > 0 ? 'border-t border-border' : ''}">
+							<span class="text-data text-sm text-text-muted w-8">{String(i + 1).padStart(2, '0')}</span>
+							<span class="font-serif text-xl text-text flex-shrink-0">{dept.department || 'Unset'}</span>
 							<span class="leader-dots"></span>
-							<span class="text-data text-sm text-text">${((dept.total_cost_saved ?? 0) / 1000).toFixed(0)}K</span>
+							<span class="text-data text-base text-positive font-semibold">${((dept.total_cost_saved ?? 0) / 1000).toFixed(0)}K</span>
 						</div>
 					{/each}
 				</div>
 			{:else}
-				<p class="text-sm text-text-muted">No data yet</p>
+				<p class="text-base text-text-muted">No data yet</p>
 			{/if}
 		</div>
 
 		<!-- Recent + Challenges -->
-		<div class="space-y-10">
+		<div class="space-y-12">
 			{#if data.activeChallenges.length > 0}
 				<div>
-					<div class="flex items-baseline justify-between mb-6">
+					<div class="flex items-baseline justify-between mb-8">
 						<h2 class="heading-section">Active Challenges</h2>
-						<a href="/challenges" class="text-xs text-text-muted link-draw">View all</a>
+						<a href="/challenges" class="text-sm text-text-secondary link-draw">View all</a>
 					</div>
 					{#each data.activeChallenges as challenge}
 						{@const daysLeft = Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
-						<a href="/challenges" class="block py-2 group">
-							<p class="text-sm text-text group-hover:text-text-secondary transition-colors">{challenge.title}</p>
-							<p class="text-xs text-text-muted">{daysLeft > 0 ? `${daysLeft}d remaining` : 'Ended'}</p>
+						<a href="/challenges" class="block py-3 group">
+							<p class="text-base text-text group-hover:text-text-secondary transition-colors">{challenge.title}</p>
+							<p class="text-sm text-text-muted mt-0.5">{daysLeft > 0 ? `${daysLeft}d remaining` : 'Ended'}</p>
 						</a>
 					{/each}
 				</div>
 			{/if}
 
 			<div>
-				<h2 class="heading-section mb-6">Recent</h2>
+				<h2 class="heading-section mb-8">Recent</h2>
 				{#if data.recentProjects.length > 0}
 					{#each data.recentProjects as project, i}
-						<a href="/projects/{project.id}" class="flex items-baseline py-2.5 group {i > 0 ? 'border-t border-border' : ''}">
-							<span class="font-serif text-text group-hover:text-text-secondary transition-colors flex-1">{project.title}</span>
-							<span class="text-xs text-text-muted ml-4">{project.submitter?.full_name ?? 'Unknown'}</span>
+						<a href="/projects/{project.id}" class="flex items-baseline py-3.5 group {i > 0 ? 'border-t border-border' : ''}">
+							<span class="font-serif text-lg text-text group-hover:text-text-secondary transition-colors flex-1">{project.title}</span>
+							<span class="text-sm text-text-muted ml-4">{project.submitter?.full_name ?? 'Unknown'}</span>
 						</a>
 					{/each}
 				{:else}
-					<p class="text-sm text-text-muted">No activity yet</p>
+					<p class="text-base text-text-muted">No activity yet</p>
 				{/if}
 			</div>
 		</div>
@@ -199,7 +249,7 @@
 			class="w-full flex items-center justify-between py-2 group"
 		>
 			<h2 class="heading-page">Analytics</h2>
-			<span class="text-xs text-text-muted group-hover:text-text transition-colors">{showAnalytics ? 'Collapse' : 'Expand'}</span>
+			<span class="text-sm text-text-muted group-hover:text-text transition-colors">{showAnalytics ? 'Collapse' : 'Expand'}</span>
 		</button>
 
 		{#if showAnalytics}

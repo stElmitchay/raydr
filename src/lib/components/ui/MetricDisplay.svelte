@@ -7,7 +7,7 @@
 </script>
 
 <div class="flex flex-col">
-	<span class="text-data {size === 'large' ? 'text-3xl md:text-4xl' : size === 'small' ? 'text-lg' : 'text-2xl'} text-text font-medium">
+	<span class="text-data {size === 'large' ? 'text-3xl md:text-4xl' : size === 'small' ? 'text-lg' : 'text-2xl'} text-text font-semibold">
 		{value}
 	</span>
 	<span class="heading-section mt-1.5">{label}</span>

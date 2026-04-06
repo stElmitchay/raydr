@@ -54,13 +54,20 @@
 
 	<!-- Title -->
 	<div class="flex items-start justify-between gap-4 mb-8 animate-fade-up stagger-1">
-		<h1 class="heading-display text-[clamp(2rem,4vw,3rem)] text-text">{project.title}</h1>
+		<h1 class="heading-display text-[clamp(2.5rem,5vw,3.5rem)] text-text">{project.title}</h1>
 		<div class="flex items-center gap-2 flex-shrink-0 pt-2">
 			{#if dpgEvaluation}
 				<span class="tag">{dpgEvaluation.overall_score}/100</span>
 			{/if}
 			{#if project.status === 'featured'}
 				<span class="tag-featured">Featured</span>
+			{/if}
+			{#if isAdmin}
+				<form method="POST" action="?/toggleFeatured" use:enhance>
+					<button type="submit" class="text-xs text-text-muted link-draw">
+						{project.status === 'featured' ? 'Unfeature' : 'Feature'}
+					</button>
+				</form>
 			{/if}
 		</div>
 	</div>
