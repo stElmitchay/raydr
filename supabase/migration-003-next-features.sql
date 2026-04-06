@@ -60,7 +60,20 @@ CREATE POLICY "newsletters_read" ON newsletters FOR SELECT USING (true);
 -- Service role writes via supabaseAdmin
 
 -- ============================================
--- 4. ADMIN FLAG ON PROFILES
+-- 4. ANALYSIS STATUS ON PROJECTS
+-- ============================================
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS analysis_status text NOT NULL DEFAULT 'none' CHECK (analysis_status IN ('none', 'analyzing', 'completed', 'failed'));
+
+-- ============================================
+-- 5. COMMUNITY PROJECT FIELDS
+-- ============================================
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_goals text DEFAULT '';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS target_audience text DEFAULT '';
+
+-- ============================================
+-- 5. ADMIN FLAG ON PROFILES
 -- ============================================
 
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;

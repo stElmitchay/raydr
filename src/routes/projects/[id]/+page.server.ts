@@ -41,9 +41,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 		.from('next_steps')
 		.select('*')
 		.eq('project_id', params.id)
-		.eq('completed', false)
-		.order('created_at', { ascending: false })
-		.limit(5);
+		.order('completed', { ascending: true })
+		.order('created_at', { ascending: false });
 
 	const latestAnalysisPromise = supabase
 		.from('ai_analyses')

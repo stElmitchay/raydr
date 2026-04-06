@@ -57,6 +57,8 @@ export const actions: Actions = {
 		const tech_stack = (formData.get('tech_stack') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
 		const ai_tools_used = (formData.get('ai_tools_used') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
 		const tool_request_id = (formData.get('tool_request_id') as string) || null;
+		const project_goals = (formData.get('project_goals') as string)?.trim() || '';
+		const target_audience = (formData.get('target_audience') as string)?.trim() || '';
 
 		if (!title || !description || !problem_statement || !solution_summary) {
 			return fail(400, { error: 'Title, description, problem, and solution are required' });
@@ -148,6 +150,8 @@ export const actions: Actions = {
 			ai_tools_used,
 			screenshot_urls,
 			video_url: video_url || null,
+			project_goals,
+			target_audience,
 			submitted_by: session.user.id,
 			season: seasonId,
 			week,

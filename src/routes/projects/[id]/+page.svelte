@@ -16,6 +16,9 @@
 	const isOwner = $derived(userId === project.submitted_by);
 	const isAdmin = $derived(data.isAdmin);
 
+	const pendingSteps = $derived(nextSteps.filter(s => !s.completed));
+	const fulfilledSteps = $derived(nextSteps.filter(s => s.completed));
+
 	let implementing = $state<string | null>(null);
 	let showAddMilestone = $state(false);
 	const hasAdopted = $derived(adoptions.some((a: any) => a.user_id === userId));
@@ -210,10 +213,6 @@
 				{#if project.repo_url}
 					<a href={project.repo_url} target="_blank" rel="noopener" class="btn-secondary px-5 py-2 text-sm">Source Code</a>
 				{/if}
-				{#if isOwner && project.repo_url}
-					<a href="/projects/{project.id}/analyze" class="text-sm text-text-secondary link-draw py-2">Analyze Progress</a>
-					<a href="/projects/{project.id}/generate-readme" class="text-sm text-text-secondary link-draw py-2">Generate README</a>
-				{/if}
 			</div>
 		</ScrollReveal>
 	{/if}
@@ -289,27 +288,60 @@
 		</ScrollReveal>
 	{/if}
 
-	<!-- Next Steps / Milestones -->
-	{#if nextSteps.length > 0 || isAdmin}
-		<ScrollReveal>
-			<div class="border-t border-border pt-8 mb-10">
-				<h3 class="heading-section mb-4">Up Next</h3>
-				{#each nextSteps as step, i}
+	<!-- Milestones (Always visible) -->
+	<ScrollReveal>
+		<div class="border-t border-border pt-8 mb-10">
+			<h3 class="heading-section mb-4">
+				Milestones
+				{#if nextSteps.length > 0}
+					<span class="text-text-muted normal-case text-[10px] tracking-normal ml-2">({fulfilledSteps.length}/{nextSteps.length} completed)</span>
+				{/if}
+			</h3>
+
+			{#if project.analysis_status === 'analyzing'}
+				<!-- Analysis in progress -->
+				<div class="flex items-center gap-3 py-6">
+					<span class="h-4 w-4 border-2 border-text-muted border-t-text rounded-full animate-spin shrink-0"></span>
+					<div>
+						<p class="text-sm text-text">Analyzing your project...</p>
+						<p class="text-xs text-text-muted mt-0.5">AI is reviewing your repository and generating milestones. This may take a moment.</p>
+					</div>
+				</div>
+			{:else if project.analysis_status === 'failed' && nextSteps.length === 0}
+				<!-- Analysis failed -->
+				<div class="py-6">
+					<p class="text-sm text-text">Analysis could not complete</p>
+					<p class="text-xs text-text-muted mt-0.5">Make sure your GitHub account is connected and the repository is accessible. Milestones will appear after a successful analysis.</p>
+				</div>
+			{:else if nextSteps.length === 0}
+				<!-- No milestones yet -->
+				<div class="py-6">
+					{#if project.repo_url}
+						<p class="text-sm text-text-muted">Milestones will appear after your project is analyzed.</p>
+						<p class="text-xs text-text-muted mt-0.5">Submit your project to trigger an automatic analysis, or ask an admin to add milestones.</p>
+					{:else}
+						<p class="text-sm text-text-muted">Add a repository URL to enable AI-powered milestone tracking.</p>
+					{/if}
+				</div>
+			{:else}
+				<!-- Pending milestones -->
+				{#each pendingSteps as step, i}
 					<div class="flex items-start gap-3 py-3 {i > 0 ? 'border-t border-border' : ''}">
-						<span class="tag text-[10px] shrink-0 mt-0.5">{step.category}</span>
+						<span class="mt-0.5 h-4 w-4 rounded-full border border-border shrink-0"></span>
 						<div class="flex-1 min-w-0">
-							<p class="text-sm text-text {step.completed ? 'line-through opacity-60' : ''}">{step.title}</p>
+							<p class="text-sm text-text">{step.title}</p>
 							{#if step.description}
 								<p class="text-xs text-text-muted mt-0.5">{step.description}</p>
 							{/if}
-							{#if step.source === 'manual'}
-								<span class="text-[10px] text-text-muted">Admin assigned</span>
-							{/if}
+							<div class="flex items-center gap-2 mt-1">
+								<span class="tag text-[10px]">{step.category}</span>
+								{#if step.source === 'manual'}
+									<span class="text-[10px] text-text-muted">Admin assigned</span>
+								{/if}
+							</div>
 						</div>
 						<span class="text-xs text-data text-text-muted shrink-0">~{step.estimated_xp} XP</span>
-						{#if step.completed}
-							<span class="text-xs text-positive shrink-0">Fulfilled</span>
-						{:else if step.implementation_status === 'implemented' && step.pr_url}
+						{#if step.implementation_status === 'implemented' && step.pr_url}
 							<a href={step.pr_url} target="_blank" rel="noopener" class="text-xs text-text link-draw shrink-0">View PR</a>
 						{:else if step.implementation_status === 'in_progress' || implementing === step.id}
 							<span class="text-xs text-text-muted shrink-0">Implementing...</span>
@@ -333,41 +365,60 @@
 					</div>
 				{/each}
 
-				<!-- Admin: Add Milestone -->
-				{#if isAdmin}
-					<div class="mt-4 pt-4 border-t border-border">
-						{#if showAddMilestone}
-							<form method="POST" action="?/addMilestone" use:enhance={() => {
-								return async ({ update }) => { showAddMilestone = false; await update(); };
-							}} class="space-y-3">
-								<input name="title" type="text" placeholder="Milestone title" required class="w-full px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
-								<input name="description" type="text" placeholder="Description (optional)" class="w-full px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
-								<div class="flex gap-3">
-									<select name="category" class="px-3 py-2 text-sm bg-surface-alt border border-border text-text">
-										<option value="feature">Feature</option>
-										<option value="bugfix">Bugfix</option>
-										<option value="docs">Docs</option>
-										<option value="refactor">Refactor</option>
-										<option value="test">Test</option>
-										<option value="infra">Infra</option>
-										<option value="other">Other</option>
-									</select>
-									<input name="estimated_xp" type="number" value="50" min="10" max="200" class="w-20 px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
-									<span class="text-xs text-text-muted self-center">XP</span>
+				<!-- Fulfilled milestones -->
+				{#if fulfilledSteps.length > 0}
+					{#if pendingSteps.length > 0}
+						<div class="border-t border-border my-2"></div>
+					{/if}
+					{#each fulfilledSteps as step, i}
+						<div class="flex items-start gap-3 py-3 opacity-70 {i > 0 ? 'border-t border-border' : ''}">
+							<span class="mt-0.5 h-4 w-4 rounded-full bg-positive/20 text-positive flex items-center justify-center shrink-0 text-[10px]">&#10003;</span>
+							<div class="flex-1 min-w-0">
+								<p class="text-sm text-text">{step.title}</p>
+								<div class="flex items-center gap-2 mt-1">
+									<span class="tag text-[10px]">{step.category}</span>
 								</div>
-								<div class="flex gap-2">
-									<button type="submit" class="text-sm text-text link-draw">Add</button>
-									<button type="button" onclick={() => showAddMilestone = false} class="text-sm text-text-muted link-draw">Cancel</button>
-								</div>
-							</form>
-						{:else}
-							<button onclick={() => showAddMilestone = true} class="text-sm text-text-muted link-draw">+ Add milestone</button>
-						{/if}
-					</div>
+							</div>
+							<span class="text-xs text-data text-positive shrink-0">+{step.estimated_xp} XP</span>
+						</div>
+					{/each}
 				{/if}
-			</div>
-		</ScrollReveal>
-	{/if}
+			{/if}
+
+			<!-- Admin: Add Milestone -->
+			{#if isAdmin}
+				<div class="mt-4 pt-4 border-t border-border">
+					{#if showAddMilestone}
+						<form method="POST" action="?/addMilestone" use:enhance={() => {
+							return async ({ update }) => { showAddMilestone = false; await update(); };
+						}} class="space-y-3">
+							<input name="title" type="text" placeholder="Milestone title" required class="w-full px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
+							<input name="description" type="text" placeholder="Description (optional)" class="w-full px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
+							<div class="flex gap-3">
+								<select name="category" class="px-3 py-2 text-sm bg-surface-alt border border-border text-text">
+									<option value="feature">Feature</option>
+									<option value="bugfix">Bugfix</option>
+									<option value="docs">Docs</option>
+									<option value="refactor">Refactor</option>
+									<option value="test">Test</option>
+									<option value="infra">Infra</option>
+									<option value="other">Other</option>
+								</select>
+								<input name="estimated_xp" type="number" value="50" min="10" max="200" class="w-20 px-3 py-2 text-sm bg-surface-alt border border-border text-text" />
+								<span class="text-xs text-text-muted self-center">XP</span>
+							</div>
+							<div class="flex gap-2">
+								<button type="submit" class="text-sm text-text link-draw">Add</button>
+								<button type="button" onclick={() => showAddMilestone = false} class="text-sm text-text-muted link-draw">Cancel</button>
+							</div>
+						</form>
+					{:else}
+						<button onclick={() => showAddMilestone = true} class="text-sm text-text-muted link-draw">+ Add milestone</button>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	</ScrollReveal>
 
 	<!-- Team -->
 	{#if teamMembers.length > 0}

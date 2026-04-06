@@ -5,9 +5,6 @@
 	let { data, form } = $props();
 	let submitting = $state(false);
 	const isInternal = $derived(data.profile?.role === 'internal');
-	let impactOpen = $state(false);
-
-	$effect(() => { impactOpen = isInternal; });
 
 	const preselectedRequest = $derived(page.url.searchParams.get('request') ?? '');
 	const profile = $derived(data.profile);
@@ -15,7 +12,9 @@
 
 <div class="max-w-xl mx-auto px-6 md:px-10 py-10">
 	<h1 class="heading-page mb-2 animate-fade-up stagger-1">Submit Project</h1>
-	<p class="text-sm text-text-muted mb-8 animate-fade-up stagger-2">Share what you've built</p>
+	<p class="text-sm text-text-muted mb-8 animate-fade-up stagger-2">
+		{isInternal ? 'Share what you\'ve built for the team' : 'Share what you\'re building'}
+	</p>
 
 	{#if form?.error}
 		<div class="border border-negative text-negative text-sm px-4 py-2.5 mb-6">{form.error}</div>
@@ -30,7 +29,7 @@
 		}}
 		class="space-y-10 animate-fade-up stagger-3"
 	>
-		<!-- About -->
+		<!-- About (shared) -->
 		<div class="space-y-5">
 			<div class="heading-section border-b border-border pb-2">About</div>
 			<div>
@@ -49,26 +48,12 @@
 				<label for="solution_summary" class="heading-section block mb-2">Solution *</label>
 				<textarea id="solution_summary" name="solution_summary" placeholder="How does it solve it?" rows="2" class="input-box" required></textarea>
 			</div>
-			{#if data.claimedRequests?.length > 0}
-				<div>
-					<label for="tool_request_id" class="heading-section block mb-2">Fulfills Request</label>
-					<select id="tool_request_id" name="tool_request_id" class="input-box" value={preselectedRequest}>
-						<option value="">None — standalone project</option>
-						{#each data.claimedRequests as req}
-							<option value={req.id}>{req.title}{req.bonus_xp ? ` (+${req.bonus_xp} XP bounty)` : ''}</option>
-						{/each}
-					</select>
-				</div>
-			{/if}
 		</div>
 
-		<!-- Impact Metrics -->
-		<div class="space-y-5">
-			<button type="button" onclick={() => impactOpen = !impactOpen} class="heading-section border-b border-border pb-2 w-full text-left flex items-center justify-between">
-				Impact Metrics
-				<span class="text-text-muted normal-case text-[10px] tracking-normal">{impactOpen ? 'Collapse' : 'Expand'}</span>
-			</button>
-			{#if impactOpen}
+		<!-- Internal: Impact Metrics -->
+		{#if isInternal}
+			<div class="space-y-5">
+				<div class="heading-section border-b border-border pb-2">Impact</div>
 				<div>
 					<label for="replaces_tool" class="heading-section block mb-2">Replaces Tool</label>
 					<input id="replaces_tool" name="replaces_tool" type="text" placeholder="e.g., Jira, manual process" class="input-editorial" />
@@ -83,10 +68,36 @@
 						<input id="estimated_hours_saved_weekly" name="estimated_hours_saved_weekly" type="number" placeholder="0" class="input-editorial" />
 					</div>
 				</div>
-			{/if}
-		</div>
+				{#if data.claimedRequests?.length > 0}
+					<div>
+						<label for="tool_request_id" class="heading-section block mb-2">Fulfills Request</label>
+						<select id="tool_request_id" name="tool_request_id" class="input-box" value={preselectedRequest}>
+							<option value="">None — standalone project</option>
+							{#each data.claimedRequests as req}
+								<option value={req.id}>{req.title}{req.bonus_xp ? ` (+${req.bonus_xp} XP bounty)` : ''}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
-		<!-- Tech -->
+		<!-- Community: Project Goals -->
+		{#if !isInternal}
+			<div class="space-y-5">
+				<div class="heading-section border-b border-border pb-2">Goals</div>
+				<div>
+					<label for="project_goals" class="heading-section block mb-2">What are you trying to achieve? *</label>
+					<textarea id="project_goals" name="project_goals" placeholder="What's the vision for this project? What does success look like?" rows="3" class="input-box" required></textarea>
+				</div>
+				<div>
+					<label for="target_audience" class="heading-section block mb-2">Who is this for?</label>
+					<input id="target_audience" name="target_audience" type="text" placeholder="e.g., small businesses, students, developers" class="input-editorial" />
+				</div>
+			</div>
+		{/if}
+
+		<!-- Tech (shared) -->
 		<div class="space-y-5">
 			<div class="heading-section border-b border-border pb-2">Tech</div>
 			<div>
@@ -116,7 +127,7 @@
 			</div>
 		</div>
 
-		<!-- Media -->
+		<!-- Media (shared) -->
 		<div class="space-y-5">
 			<div class="heading-section border-b border-border pb-2">Media</div>
 			<div>

@@ -18,6 +18,12 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 
 	if (!project?.repo_url) return;
 
+	// Mark as analyzing
+	await supabaseAdmin
+		.from('projects')
+		.update({ analysis_status: 'analyzing' })
+		.eq('id', projectId);
+
 	// Get GitHub connection
 	const { data: ghConn } = await supabaseAdmin
 		.from('github_connections')
@@ -181,13 +187,28 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 			});
 		}
 	}
+
+	// Mark as completed
+	await supabaseAdmin
+		.from('projects')
+		.update({ analysis_status: 'completed' })
+		.eq('id', projectId);
 }
 
 /**
  * Fire-and-forget wrapper — kicks off analysis without blocking.
  */
 export function triggerBackgroundAnalysis(projectId: string, userId: string): void {
-	runProjectAnalysis(projectId, userId).catch(err => {
+	runProjectAnalysis(projectId, userId).catch(async (err) => {
 		console.error(`Background analysis failed for project ${projectId}:`, err);
+		// Mark as failed so the UI can show the error state
+		try {
+			await supabaseAdmin
+				.from('projects')
+				.update({ analysis_status: 'failed' })
+				.eq('id', projectId);
+		} catch {
+			// Ignore failure to update status
+		}
 	});
 }

@@ -34,6 +34,9 @@ export interface Project {
 	submitted_by: string;
 	season: number;
 	week: number;
+	project_goals?: string;
+	target_audience?: string;
+	analysis_status: 'none' | 'analyzing' | 'completed' | 'failed';
 	status: 'draft' | 'submitted' | 'featured';
 	project_type: 'internal' | 'community';
 	demo_cycle?: number;
