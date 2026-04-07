@@ -207,31 +207,39 @@
 		</ScrollReveal>
 	{/if}
 
-	<!-- 1+2. Video + Repository (side by side) -->
-	{#if project.video_url || repoInfo}
+	<!-- 1+2. Demo + Repository (side by side) -->
+	{#if project.demo_url || repoInfo}
 		<ScrollReveal>
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-				{#if project.video_url}
-					{@const embedUrl = getEmbedUrl(project.video_url)}
+				{#if project.demo_url}
+					{@const embedUrl = getEmbedUrl(project.demo_url)}
 					<div>
-						<h3 class="heading-section mb-4">Demo Video</h3>
+						<h3 class="heading-section mb-4">Demo</h3>
 						{#if embedUrl}
 							<div class="aspect-video border border-border overflow-hidden">
-								<iframe src={embedUrl} title="Demo video" class="w-full h-full" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+								<iframe src={embedUrl} title="Demo" class="w-full h-full" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
 							</div>
 						{:else}
-							<a href={project.video_url} target="_blank" rel="noopener" class="text-sm text-text link-draw">Watch Video &rarr;</a>
+							<a href={project.demo_url} target="_blank" rel="noopener" class="block aspect-video border border-border bg-surface-alt hover:bg-surface-hover transition-colors flex items-center justify-center group">
+								<span class="font-serif text-2xl italic text-text group-hover:text-text-secondary transition-colors">Open Demo &rarr;</span>
+							</a>
 						{/if}
 					</div>
 				{/if}
 
 				{#if repoInfo}
 					<div>
-						<h3 class="heading-section mb-4 flex items-center gap-2">
-							<svg class="h-4 w-4 text-text-muted" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+						<a
+							href={project.repo_url}
+							target="_blank"
+							rel="noopener"
+							class="heading-section mb-4 flex items-center gap-2 text-text hover:text-text-secondary transition-colors"
+						>
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
 							Repository
-						</h3>
-						<div class="border border-border p-4 space-y-3">
+							<span class="text-text-muted ml-1">&rarr;</span>
+						</a>
+						<a href={project.repo_url} target="_blank" rel="noopener" class="block border border-border p-4 space-y-3 hover:bg-surface-alt hover:border-border-strong transition-colors">
 							<div class="grid grid-cols-2 gap-3">
 								<div>
 									<span class="text-data text-lg text-text">{repoInfo.stargazers_count}</span>
@@ -268,7 +276,7 @@
 								</div>
 							{/if}
 							<p class="text-xs text-text-muted pt-2 border-t border-border">Updated {new Date(repoInfo.updated_at).toLocaleDateString()}</p>
-						</div>
+						</a>
 					</div>
 				{/if}
 			</div>
@@ -476,55 +484,28 @@
 		</ScrollReveal>
 	{/if}
 
-	<!-- Action Links -->
-	{#if project.demo_url || project.repo_url}
+
+	<!-- Adoption (only when teams have adopted) -->
+	{#if adoptions.length > 0}
 		<ScrollReveal>
-			<div class="mb-12">
-				<h3 class="heading-section mb-4">Actions</h3>
-				<div class="flex flex-wrap gap-4">
-					{#if project.demo_url}
-						<a href={project.demo_url} target="_blank" rel="noopener" class="btn-primary">View Demo</a>
-					{/if}
-					{#if project.repo_url}
-						<a href={project.repo_url} target="_blank" rel="noopener" class="btn-secondary">Source Code</a>
-					{/if}
+			<div class="flex items-center gap-4 py-8 border-t border-border mb-12">
+				<div class="flex -space-x-2">
+					{#each adoptions.slice(0, 8) as adoption}
+						{#if adoption.adopter?.avatar_url}
+							<img src={adoption.adopter.avatar_url} alt={adoption.adopter.full_name} class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
+						{:else}
+							<div class="h-8 w-8 rounded-full bg-surface-alt flex items-center justify-center text-xs font-medium text-text border-2 border-bg">
+								{adoption.adopter?.full_name?.charAt(0) ?? '?'}
+							</div>
+						{/if}
+					{/each}
 				</div>
+				<span class="text-base text-text-secondary">
+					{adoptions.length} team{adoptions.length === 1 ? '' : 's'} using this
+				</span>
 			</div>
 		</ScrollReveal>
 	{/if}
-
-	<!-- Adoption -->
-	<ScrollReveal>
-		<div class="flex items-center justify-between py-8 border-t border-border mb-12">
-			<div class="flex items-center gap-4">
-				{#if adoptions.length > 0}
-					<div class="flex -space-x-2">
-						{#each adoptions.slice(0, 8) as adoption}
-							{#if adoption.adopter?.avatar_url}
-								<img src={adoption.adopter.avatar_url} alt={adoption.adopter.full_name} class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
-							{:else}
-								<div class="h-8 w-8 rounded-full bg-surface-alt flex items-center justify-center text-xs font-medium text-text border-2 border-bg">
-									{adoption.adopter?.full_name?.charAt(0) ?? '?'}
-								</div>
-							{/if}
-						{/each}
-					</div>
-				{/if}
-				<span class="text-base text-text-secondary">
-					{adoptions.length === 0 ? 'No teams using this yet' : `${adoptions.length} team${adoptions.length === 1 ? '' : 's'} using this`}
-				</span>
-			</div>
-			{#if userId}
-				{#if hasAdopted}
-					<span class="text-sm text-text-muted">Adopted</span>
-				{:else}
-					<form method="POST" action="?/adopt" use:enhance>
-						<button type="submit" class="btn-primary">We use this</button>
-					</form>
-				{/if}
-			{/if}
-		</div>
-	</ScrollReveal>
 
 	<!-- Team -->
 	{#if teamMembers.length > 0}
