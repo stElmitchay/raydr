@@ -24,13 +24,13 @@
 	const types = ['all', 'internal', 'community'] as const;
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-10">
+<div class="px-6 md:px-10 lg:px-16 py-12 max-w-6xl mx-auto">
 	<!-- Header -->
-	<div class="flex items-baseline justify-between mb-2 animate-fade-up stagger-1">
+	<div class="flex items-baseline justify-between mb-3 animate-fade-up stagger-1">
 		<h1 class="heading-page">Projects</h1>
-		<a href="/submit" class="btn-primary px-4 py-1.5 text-sm">Submit</a>
+		<a href="/submit" class="btn-primary px-5 py-2 text-sm">Submit</a>
 	</div>
-	<p class="text-sm text-text-muted mb-8 animate-fade-up stagger-2">{data.projects.length} projects</p>
+	<p class="text-base text-text-secondary mb-10 animate-fade-up stagger-2">{data.projects.length} {data.projects.length === 1 ? 'project' : 'projects'} from the community</p>
 
 	<!-- Filters -->
 	<div class="sticky top-14 z-30 bg-bg/90 backdrop-blur-sm border-b border-border py-3 -mx-6 md:-mx-10 lg:-mx-16 px-6 md:px-10 lg:px-16 flex flex-wrap items-center gap-3 animate-fade-up stagger-2">

@@ -13,20 +13,25 @@
 
 <a href="/projects/{project.id}" class="editorial-row group">
 	<!-- Title + submitter -->
-	<div class="flex-1 min-w-0">
-		<h3 class="font-serif text-xl text-text group-hover:text-text truncate">
+	<div class="flex-1 min-w-0 pr-6">
+		<h3 class="font-serif text-2xl text-text leading-tight truncate">
 			{project.title}
 		</h3>
-		<p class="text-sm text-text-secondary mt-0.5">
+		{#if project.description}
+			<p class="text-sm text-text-secondary mt-1.5 line-clamp-1 max-w-2xl leading-relaxed">
+				{project.description}
+			</p>
+		{/if}
+		<p class="text-xs text-text-muted mt-2">
 			{project.submitter?.full_name ?? 'Anonymous'}
 			{#if project.submitter?.department}
-				<span class="text-text-muted/60">&middot; {project.submitter.department}</span>
+				<span>&middot; {project.submitter.department}</span>
 			{/if}
 		</p>
 	</div>
 
 	<!-- Tags -->
-	<div class="hidden md:flex items-center gap-1.5 mx-6 flex-shrink-0">
+	<div class="hidden md:flex items-center gap-1.5 mr-6 flex-shrink-0">
 		{#each (project.ai_tools_used ?? []).slice(0, 2) as tool}
 			<span class="tag">{tool}</span>
 		{/each}
