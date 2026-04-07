@@ -9,6 +9,7 @@
 	const adoptions = $derived(data.adoptions);
 	const nextSteps = $derived(data.nextSteps);
 	const dpgEvaluation = $derived(data.dpgEvaluation);
+	const ideaEvaluation = $derived(data.ideaEvaluation);
 	const repoInfo = $derived(data.repoInfo);
 	const contributors = $derived(data.contributors);
 	const userId = $derived(data.userId);
@@ -92,6 +93,79 @@
 			</div>
 		</div>
 	</ScrollReveal>
+
+	<!-- Idea Evaluation -->
+	{#if ideaEvaluation}
+		<ScrollReveal>
+			<div class="border-t border-border pt-10 mb-12">
+				<div class="flex items-baseline justify-between mb-6">
+					<h3 class="heading-section">Idea Evaluation</h3>
+					<span class="text-data text-2xl text-text">{ideaEvaluation.overall_score}<span class="text-sm text-text-muted">/100</span></span>
+				</div>
+
+				<p class="font-serif italic text-xl text-text mb-8 max-w-3xl leading-snug">"{ideaEvaluation.one_line_verdict}"</p>
+
+				<!-- Score breakdown -->
+				<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+					{#each Object.entries(ideaEvaluation.scores) as [key, score] (key)}
+						{@const numScore = score as number}
+						<div class="border border-border p-4">
+							<div class="flex items-baseline justify-between mb-2">
+								<span class="heading-section">{key.replace(/_/g, ' ')}</span>
+								<span class="text-data text-base text-text">{numScore}<span class="text-xs text-text-muted">/10</span></span>
+							</div>
+							<div class="h-1 bg-surface-alt overflow-hidden">
+								<div class="h-full bg-text" style="width: {numScore * 10}%"></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+
+				<!-- Strengths / Concerns / Recommendations -->
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+					{#if ideaEvaluation.strengths?.length}
+						<div>
+							<h4 class="heading-section mb-3 text-positive">Strengths</h4>
+							<ul class="space-y-2">
+								{#each ideaEvaluation.strengths as item}
+									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+										<span class="text-positive shrink-0">+</span>
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+					{#if ideaEvaluation.concerns?.length}
+						<div>
+							<h4 class="heading-section mb-3 text-negative">Concerns</h4>
+							<ul class="space-y-2">
+								{#each ideaEvaluation.concerns as item}
+									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+										<span class="text-negative shrink-0">−</span>
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+					{#if ideaEvaluation.recommendations?.length}
+						<div>
+							<h4 class="heading-section mb-3">Recommendations</h4>
+							<ul class="space-y-2">
+								{#each ideaEvaluation.recommendations as item}
+									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+										<span class="text-text-muted shrink-0">→</span>
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</ScrollReveal>
+	{/if}
 
 	<!-- 1+2. Video + Repository (side by side) -->
 	{#if project.video_url || repoInfo}

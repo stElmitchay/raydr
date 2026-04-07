@@ -170,6 +170,7 @@ export interface AIAnalysis {
 	lines_changed: number;
 	languages: Record<string, number>;
 	dpg_evaluation?: DPGEvaluation;
+	idea_evaluation?: IdeaEvaluation;
 	analyzed_at: string;
 }
 
@@ -205,6 +206,22 @@ export interface NextStep {
 	implementation_status: 'pending' | 'in_progress' | 'implemented' | 'failed';
 	pr_url?: string;
 	created_at: string;
+}
+
+export interface IdeaEvaluation {
+	overall_score: number;
+	one_line_verdict: string;
+	scores: {
+		problem_clarity: number;
+		solution_fit: number;
+		novelty: number;
+		audience_clarity: number;
+		feasibility: number;
+		impact_potential: number;
+	};
+	strengths: string[];
+	concerns: string[];
+	recommendations: string[];
 }
 
 export interface DPGEvaluation {

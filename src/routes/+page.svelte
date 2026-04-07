@@ -73,7 +73,7 @@
 	<div class="absolute top-[62%] left-[12%] right-[20%] border-t border-text/[0.02]" aria-hidden="true"></div>
 
 	<!-- Upper area: cycle identity + rotating tagline -->
-	<div class="relative z-10 mb-auto pt-8 md:pt-12">
+	<div class="relative z-10 mb-auto pt-8 md:pt-12 pointer-events-none">
 		<div class="animate-fade-up stagger-1">
 			<p class="text-data text-[10px] uppercase tracking-[0.3em] text-text-muted">
 				{data.season?.name ?? 'Season'} &mdash; Cycle {data.currentCycle}
@@ -98,7 +98,7 @@
 	</div>
 
 	<!-- Bottom: metrics -->
-	<div class="relative z-10">
+	<div class="relative z-10 pointer-events-none">
 		<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
 			<!-- Main Metric -->
 			<div class="animate-fade-up stagger-2">

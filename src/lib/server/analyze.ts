@@ -2,6 +2,7 @@ import { supabaseAdmin } from './supabase-admin';
 import { parseRepoUrl, getRepoInfo, getCommitsSince, getReadmeContent, getLicenseInfo } from './github';
 import { analyzeRepoProgress } from './claude';
 import { evaluateDPGCompliance } from './dpg';
+import { evaluateIdea } from './idea-eval';
 import { getCurrentDemoCycle } from './demo-cycle';
 
 /**
@@ -86,6 +87,25 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 		// DPG failed silently
 	}
 
+	// Idea evaluation (optional, don't fail the whole analysis)
+	let ideaEvaluation = null;
+	try {
+		ideaEvaluation = await evaluateIdea({
+			projectContext: {
+				title: project.title,
+				description: project.description,
+				problem_statement: project.problem_statement,
+				solution_summary: project.solution_summary,
+				project_goals: project.project_goals,
+				target_audience: project.target_audience,
+				tech_stack: project.tech_stack,
+				project_type: project.project_type
+			}
+		});
+	} catch {
+		// Idea eval failed silently
+	}
+
 	// Run Claude analysis with pending steps for fulfillment detection
 	const analysis = await analyzeRepoProgress({
 		commits,
@@ -124,7 +144,8 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 		commit_count: commits.length,
 		lines_changed: commits.reduce((sum, c) => sum + c.additions + c.deletions, 0),
 		languages: repoInfo.languages,
-		dpg_evaluation: dpgEvaluation
+		dpg_evaluation: dpgEvaluation,
+		idea_evaluation: ideaEvaluation
 	}, { onConflict: 'project_id,demo_cycle,season' }).select('id').single();
 
 	const analysisId = storedAnalysis?.id;
