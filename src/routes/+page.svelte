@@ -7,39 +7,14 @@
 	let { data } = $props();
 	let showAnalytics = $state(false);
 
-	// Analytics computations
-	const weeklyData = $derived.by(() => {
-		const weeks: Record<number, { week: number; submissions: number; costSaved: number }> = {};
-		for (const p of data.allProjects ?? []) {
-			const w = p.demo_cycle ?? p.week ?? 0;
-			if (!weeks[w]) weeks[w] = { week: w, submissions: 0, costSaved: 0 };
-			weeks[w].submissions++;
-			weeks[w].costSaved += p.annual_cost_replaced ?? 0;
-		}
-		return Object.values(weeks).sort((a, b) => a.week - b.week);
-	});
+	// Pre-computed by server (no more client-side iteration over raw projects)
+	const weeklyData = $derived(data.weeklyData ?? []);
+	const cumulativeData = $derived(data.cumulativeData ?? []);
+	const aiToolCounts = $derived(data.aiToolCountsArray ?? []);
 
-	const cumulativeData = $derived.by(() => {
-		let cumulative = 0;
-		return weeklyData.map(w => {
-			cumulative += w.costSaved;
-			return { week: w.week, total: cumulative };
-		});
-	});
-
-	const maxCumulative = $derived(Math.max(1, ...cumulativeData.map(d => d.total)));
-	const maxSubmissions = $derived(Math.max(1, ...weeklyData.map(d => d.submissions)));
-
-	const aiToolCounts = $derived.by(() => {
-		const counts: Record<string, number> = {};
-		for (const p of data.allProjects ?? []) {
-			for (const tool of p.ai_tools_used ?? []) {
-				counts[tool] = (counts[tool] || 0) + 1;
-			}
-		}
-		return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-	});
-	const maxToolCount = $derived(Math.max(1, ...aiToolCounts.map(([, c]) => c)));
+	const maxCumulative = $derived(Math.max(1, ...cumulativeData.map((d: any) => d.total)));
+	const maxSubmissions = $derived(Math.max(1, ...weeklyData.map((d: any) => d.submissions)));
+	const maxToolCount = $derived(Math.max(1, ...aiToolCounts.map(([, c]: any) => c)));
 
 	const sortedDepts = $derived((data.departmentStats ?? []).slice().sort((a: any, b: any) => (b.total_cost_saved ?? 0) - (a.total_cost_saved ?? 0)));
 	const maxDeptCost = $derived(Math.max(1, ...sortedDepts.map((d: any) => d.total_cost_saved ?? 0)));
@@ -230,7 +205,7 @@
 					{#each data.recentProjects as project, i}
 						<a href="/projects/{project.id}" class="flex items-baseline py-3.5 group {i > 0 ? 'border-t border-border' : ''}">
 							<span class="font-serif text-lg text-text group-hover:text-text-secondary transition-colors flex-1">{project.title}</span>
-							<span class="text-sm text-text-muted ml-4">{project.submitter?.full_name ?? 'Unknown'}</span>
+							<span class="text-sm text-text-muted ml-4">{(project.submitter as any)?.full_name ?? 'Unknown'}</span>
 						</a>
 					{/each}
 				{:else}

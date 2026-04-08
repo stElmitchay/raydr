@@ -3,37 +3,49 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 	const type = url.searchParams.get('type') || 'all';
 
-	// Fetch profiles with project stats
-	const { data: profiles } = await supabase
+	// Skinny column selects + parallel queries.
+	const profilesPromise = supabase
 		.from('profiles')
-		.select('*')
+		.select('id, full_name, avatar_url, department, level, total_xp, role')
 		.order('total_xp', { ascending: false });
 
-	// Fetch projects, optionally filtered by type
-	let projectQuery = supabase
+	let projectsQuery = supabase
 		.from('projects')
-		.select('*, submitter:profiles!submitted_by(*)')
+		.select('id, title, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, submitted_by, project_type')
 		.order('annual_cost_replaced', { ascending: false });
 
 	if (type !== 'all') {
-		projectQuery = projectQuery.eq('project_type', type);
+		projectsQuery = projectsQuery.eq('project_type', type);
 	}
 
-	const { data: projects } = await projectQuery;
+	const [{ data: profiles }, { data: projects }] = await Promise.all([
+		profilesPromise,
+		projectsQuery
+	]);
 
-	// Build builder rankings with project counts
-	const builderStats = (profiles ?? []).map((profile, index) => {
-		const userProjects = (projects ?? []).filter(p => p.submitted_by === profile.id);
+	// Build per-user aggregation in a single pass (O(n)) instead of O(n*m) filter-per-profile.
+	const stats = new Map<string, { project_count: number; total_saved: number }>();
+	for (const p of projects ?? []) {
+		const sb = (p as any).submitted_by;
+		if (!sb) continue;
+		const cur = stats.get(sb) ?? { project_count: 0, total_saved: 0 };
+		cur.project_count++;
+		cur.total_saved += (p as any).annual_cost_replaced ?? 0;
+		stats.set(sb, cur);
+	}
+
+	const builders = (profiles ?? []).map((profile, index) => {
+		const s = stats.get((profile as any).id) ?? { project_count: 0, total_saved: 0 };
 		return {
 			...profile,
 			rank: index + 1,
-			project_count: userProjects.length,
-			total_saved: userProjects.reduce((s: number, p: any) => s + (p.annual_cost_replaced || 0), 0)
+			project_count: s.project_count,
+			total_saved: s.total_saved
 		};
 	});
 
 	return {
-		builders: builderStats,
+		builders,
 		projects: projects ?? []
 	};
 };

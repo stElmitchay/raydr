@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
 
 	let { data } = $props();
@@ -11,11 +12,33 @@
 	const dpgEvaluation = $derived(data.dpgEvaluation);
 	const ideaEvaluation = $derived(data.ideaEvaluation);
 	const synthesis = $derived(data.synthesis);
-	const repoInfo = $derived(data.repoInfo);
-	const contributors = $derived(data.contributors);
 	const userId = $derived(data.userId);
 	const isOwner = $derived(userId === project.submitted_by);
 	const isAdmin = $derived(data.isAdmin);
+
+	// GitHub repo info is fetched client-side after mount so it doesn't block the
+	// initial page render. Shows a loading state, then fades in once the API call
+	// returns. The /repo-info endpoint handles the GitHub API calls server-side.
+	let repoInfo = $state<any>(null);
+	let contributors = $state<any[] | null>(null);
+	let repoLoading = $state(false);
+
+	onMount(async () => {
+		if (!project.repo_url || !userId) return;
+		repoLoading = true;
+		try {
+			const res = await fetch(`/projects/${project.id}/repo-info`);
+			if (res.ok) {
+				const json = await res.json();
+				repoInfo = json.repoInfo;
+				contributors = json.contributors;
+			}
+		} catch {
+			// silent fail — repoInfo stays null
+		} finally {
+			repoLoading = false;
+		}
+	});
 
 	const pendingSteps = $derived(nextSteps.filter(s => !s.completed));
 	const fulfilledSteps = $derived(nextSteps.filter(s => s.completed));
@@ -206,7 +229,7 @@
 	{/if}
 
 	<!-- 1+2. Demo + Repository (side by side) -->
-	{#if project.demo_url || repoInfo}
+	{#if project.demo_url || project.repo_url || repoInfo || repoLoading}
 		<ScrollReveal>
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
 				{#if project.demo_url}
@@ -225,7 +248,23 @@
 					</div>
 				{/if}
 
-				{#if repoInfo}
+				{#if repoLoading && project.repo_url}
+					<div>
+						<h3 class="heading-section mb-4 flex items-center gap-2 text-text-muted">
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+							Repository
+						</h3>
+						<div class="border border-border p-6 space-y-3 animate-pulse">
+							<div class="grid grid-cols-2 gap-3">
+								<div class="h-6 bg-surface-alt"></div>
+								<div class="h-6 bg-surface-alt"></div>
+								<div class="h-6 bg-surface-alt"></div>
+								<div class="h-6 bg-surface-alt"></div>
+							</div>
+							<div class="h-4 bg-surface-alt"></div>
+						</div>
+					</div>
+				{:else if repoInfo}
 					<div>
 						<a
 							href={project.repo_url}
@@ -489,11 +528,12 @@
 			<div class="flex items-center gap-4 py-8 border-t border-border mb-12">
 				<div class="flex -space-x-2">
 					{#each adoptions.slice(0, 8) as adoption}
-						{#if adoption.adopter?.avatar_url}
-							<img src={adoption.adopter.avatar_url} alt={adoption.adopter.full_name} class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
+						{@const adopter = (adoption.adopter as any)}
+						{#if adopter?.avatar_url}
+							<img src={adopter.avatar_url} alt={adopter.full_name} class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
 						{:else}
 							<div class="h-8 w-8 rounded-full bg-surface-alt flex items-center justify-center text-xs font-medium text-text border-2 border-bg">
-								{adoption.adopter?.full_name?.charAt(0) ?? '?'}
+								{adopter?.full_name?.charAt(0) ?? '?'}
 							</div>
 						{/if}
 					{/each}
@@ -568,16 +608,17 @@
 
 			{#if comments.length > 0}
 				{#each comments as comment, i}
+					{@const commenter = (comment.commenter as any)}
 					<div class="py-6 {i > 0 ? 'border-t border-border' : ''}">
 						<div class="flex items-start gap-4">
 							<a href="/profiles/{comment.user_id}" class="flex-shrink-0">
 								<div class="h-8 w-8 rounded-full bg-surface-alt flex items-center justify-center text-sm font-serif text-text">
-									{comment.commenter?.full_name?.charAt(0) ?? '?'}
+									{commenter?.full_name?.charAt(0) ?? '?'}
 								</div>
 							</a>
 							<div class="flex-1 min-w-0">
 								<div class="flex items-center gap-3">
-									<a href="/profiles/{comment.user_id}" class="text-sm font-medium text-text link-draw">{comment.commenter?.full_name ?? 'Unknown'}</a>
+									<a href="/profiles/{comment.user_id}" class="text-sm font-medium text-text link-draw">{commenter?.full_name ?? 'Unknown'}</a>
 									<span class="text-xs text-text-muted">{timeAgo(comment.created_at)}</span>
 									{#if comment.user_id === userId}
 										<form method="POST" action="?/deleteComment" use:enhance class="ml-auto">

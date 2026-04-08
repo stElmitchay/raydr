@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { nodeCount = 50 }: { nodeCount?: number } = $props();
+	let { nodeCount = 40 }: { nodeCount?: number } = $props();
 
 	let canvas: HTMLCanvasElement;
 	let tooltip = $state<{ x: number; y: number; fact: string; color: string } | null>(null);
@@ -91,8 +91,14 @@
 		const DISCONNECT_DIST = 280;
 
 		function effectiveNodeCount() {
-			return w < 640 ? Math.min(nodeCount, 25) : nodeCount;
+			return w < 640 ? Math.min(nodeCount, 20) : nodeCount;
 		}
+
+		// Skip the entire animation if the user prefers reduced motion.
+		const prefersReducedMotion =
+			typeof window !== 'undefined' &&
+			window.matchMedia &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 		function resize() {
 			const rect = canvas.parentElement?.getBoundingClientRect();
@@ -437,7 +443,14 @@
 		});
 		observer.observe(canvas.parentElement!);
 
-		animId = requestAnimationFrame(tick);
+		// Only animate if user hasn't requested reduced motion
+		if (!prefersReducedMotion) {
+			animId = requestAnimationFrame(tick);
+		} else {
+			// Render a single static frame so the canvas isn't blank
+			mountFade = 1;
+			draw();
+		}
 
 		return () => {
 			cancelAnimationFrame(animId);

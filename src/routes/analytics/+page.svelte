@@ -86,7 +86,7 @@
 			</div>
 			<div class="w-px h-8 bg-border"></div>
 			<div class="flex-1 text-center">
-				<p class="text-data text-2xl text-text">{data.profiles.length}</p>
+				<p class="text-data text-2xl text-text">{data.profileCount ?? 0}</p>
 				<p class="heading-section mt-1">Active Builders</p>
 			</div>
 			<div class="w-px h-8 bg-border"></div>

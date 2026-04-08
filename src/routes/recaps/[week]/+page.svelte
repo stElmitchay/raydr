@@ -5,10 +5,10 @@
 	let { data } = $props();
 	const season = $derived(data.season);
 	const cycle = $derived(data.cycle);
-	const projects = $derived(data.projects);
+	const projects = $derived(data.projects as any[]);
 	const stats = $derived(data.stats);
 	const topTools = $derived(data.topTools);
-	const winner = $derived(data.winner);
+	const winner = $derived(data.winner as any);
 
 	const maxToolCount = $derived(topTools.length > 0 ? topTools[0].count : 1);
 </script>

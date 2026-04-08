@@ -2,16 +2,23 @@
 	import '../app.css';
 	import NavBar from '$lib/components/layout/NavBar.svelte';
 	import FullScreenMenu from '$lib/components/layout/FullScreenMenu.svelte';
-	import CommandPalette from '$lib/components/layout/CommandPalette.svelte';
-
 	let { children, data } = $props();
 	let menuOpen = $state(false);
 	let paletteOpen = $state(false);
+	let CommandPalette = $state<any>(null);
+
+	async function loadCommandPalette() {
+		if (CommandPalette) return;
+		const mod = await import('$lib/components/layout/CommandPalette.svelte');
+		CommandPalette = mod.default;
+	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
 			e.preventDefault();
-			paletteOpen = !paletteOpen;
+			loadCommandPalette().then(() => {
+				paletteOpen = !paletteOpen;
+			});
 		}
 	}
 </script>
@@ -32,10 +39,12 @@
 		isDemoDay={data.isDemoDay}
 	/>
 
-	<CommandPalette
-		open={paletteOpen}
-		onClose={() => paletteOpen = false}
-	/>
+	{#if CommandPalette}
+		<CommandPalette
+			open={paletteOpen}
+			onClose={() => paletteOpen = false}
+		/>
+	{/if}
 
 	{#if data.isDemoDay}
 		<a href="/demo-day" class="fixed top-0 left-0 right-0 z-[60] bg-text text-bg text-center py-1.5 text-xs font-medium tracking-wider uppercase hover:opacity-90 transition-all">

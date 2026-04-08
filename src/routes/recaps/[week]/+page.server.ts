@@ -1,55 +1,45 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ params, locals: { supabase }, parent }) => {
 	const cycleNum = parseInt(params.week);
 	if (isNaN(cycleNum)) throw error(400, 'Invalid demo cycle number');
 
-	const { data: activeSeason } = await supabase
-		.from('seasons')
-		.select('*')
-		.eq('is_active', true)
-		.single();
-
+	// Reuse the season from the layout instead of re-fetching.
+	const { currentSeason: activeSeason } = await parent();
 	if (!activeSeason) throw error(404, 'No active season');
 
-	// Query by demo_cycle first, fall back to week for legacy data
-	let { data: projects } = await supabase
+	// Single query covering both demo_cycle and legacy week column.
+	const { data: projects } = await supabase
 		.from('projects')
-		.select('*, submitter:profiles!submitted_by(*)')
+		.select(
+			'id, title, description, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used, demo_cycle, week, screenshot_urls, submitter:profiles!submitted_by(id, full_name, department, avatar_url)'
+		)
 		.eq('season', activeSeason.id)
-		.eq('demo_cycle', cycleNum)
+		.or(`demo_cycle.eq.${cycleNum},week.eq.${cycleNum}`)
 		.in('status', ['submitted', 'featured'])
 		.order('annual_cost_replaced', { ascending: false });
-
-	// Fallback: try week column for legacy data
-	if (!projects || projects.length === 0) {
-		const result = await supabase
-			.from('projects')
-			.select('*, submitter:profiles!submitted_by(*)')
-			.eq('season', activeSeason.id)
-			.eq('week', cycleNum)
-			.in('status', ['submitted', 'featured'])
-			.order('annual_cost_replaced', { ascending: false });
-		projects = result.data;
-	}
 
 	if (!projects || projects.length === 0) {
 		throw error(404, `No submissions for demo cycle ${cycleNum}`);
 	}
 
-	// Stats
-	const totalCost = projects.reduce((s, p) => s + (p.annual_cost_replaced ?? 0), 0);
-	const totalHours = projects.reduce((s, p) => s + (p.estimated_hours_saved_weekly ?? 0), 0);
-	const departments = new Set(projects.map(p => p.submitter?.department).filter(Boolean));
-
-	// AI tool usage counts
+	// Stats (single pass)
+	let totalCost = 0;
+	let totalHours = 0;
+	const departments = new Set<string>();
 	const toolCounts = new Map<string, number>();
+
 	for (const p of projects) {
-		for (const tool of p.ai_tools_used ?? []) {
+		totalCost += (p as any).annual_cost_replaced ?? 0;
+		totalHours += (p as any).estimated_hours_saved_weekly ?? 0;
+		const dept = ((p as any).submitter as any)?.department;
+		if (dept) departments.add(dept);
+		for (const tool of ((p as any).ai_tools_used ?? []) as string[]) {
 			toolCounts.set(tool, (toolCounts.get(tool) || 0) + 1);
 		}
 	}
+
 	const topTools = Array.from(toolCounts.entries())
 		.sort((a, b) => b[1] - a[1])
 		.map(([name, count]) => ({ name, count }));

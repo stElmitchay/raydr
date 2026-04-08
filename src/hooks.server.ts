@@ -14,13 +14,19 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	});
 
+	// Cache the result so multiple callers (hooks, layout, page loads, form actions)
+	// share the same auth lookup instead of each making 2 Supabase Auth calls.
+	let cached: { session: any; user: any } | null = null;
 	event.locals.safeGetSession = async () => {
+		if (cached) return cached;
+
 		const {
 			data: { session }
 		} = await event.locals.supabase.auth.getSession();
 
 		if (!session) {
-			return { session: null, user: null };
+			cached = { session: null, user: null };
+			return cached;
 		}
 
 		const {
@@ -29,10 +35,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} = await event.locals.supabase.auth.getUser();
 
 		if (error) {
-			return { session: null, user: null };
+			cached = { session: null, user: null };
+			return cached;
 		}
 
-		return { session, user };
+		cached = { session, user };
+		return cached;
 	};
 
 	// Eagerly load session so form actions can access it

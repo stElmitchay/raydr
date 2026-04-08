@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto, invalidateAll } from '$app/navigation';
 	import Logo from '$lib/components/ui/Logo.svelte';
 
 	let { data } = $props();
@@ -38,7 +39,8 @@
 				loading = false;
 				return;
 			}
-			window.location.href = '/';
+			await invalidateAll();
+			await goto('/');
 		} else {
 			if (!fullName.trim()) {
 				error = 'Full name is required.';
@@ -62,7 +64,8 @@
 			// If a session was returned, email confirmation is disabled in Supabase.
 			// The user is already signed in — go straight home.
 			if (signUpData?.session) {
-				window.location.href = '/';
+				await invalidateAll();
+			await goto('/');
 				return;
 			}
 
@@ -100,7 +103,8 @@
 			return;
 		}
 
-		window.location.href = '/';
+		await invalidateAll();
+			await goto('/');
 	}
 
 	async function handleResendOtp() {

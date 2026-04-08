@@ -1,105 +1,74 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { parseRepoUrl, getRepoInfo, getContributors } from '$lib/server/github';
+import { parseRepoUrl } from '$lib/server/github';
 import { supabaseAdmin } from '$lib/server/supabase-admin';
 import { implementMilestone } from '$lib/server/ai-implement';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, session } }) => {
-	const { data: project } = await supabase
-		.from('projects')
-		.select('*, submitter:profiles!submitted_by(*)')
-		.eq('id', params.id)
-		.single();
+const PROJECT_COLUMNS =
+	'id, title, description, problem_statement, solution_summary, project_goals, target_audience, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, demo_url, repo_url, screenshot_urls, video_url, tech_stack, ai_tools_used, team_members, submitted_by, season, week, demo_cycle, status, project_type, adoption_count, analysis_status, created_at, updated_at, submitter:profiles!submitted_by(id, full_name, avatar_url, department, title)';
+
+export const load: PageServerLoad = async ({ params, locals: { supabase, session }, parent }) => {
+	// Use parent layout's profile to derive isAdmin without an extra query.
+	const { profile: layoutProfile } = await parent();
+	const isAdmin = !!(layoutProfile as any)?.is_admin;
+
+	// Fire ALL queries in parallel — including the project itself.
+	const [
+		{ data: project },
+		commentsResult,
+		adoptionsResult,
+		milestonesResult,
+		nextStepsResult,
+		analysisResult
+	] = await Promise.all([
+		supabase.from('projects').select(PROJECT_COLUMNS).eq('id', params.id).single(),
+		supabase
+			.from('comments')
+			.select('id, content, created_at, user_id, commenter:profiles!user_id(id, full_name, avatar_url)')
+			.eq('project_id', params.id)
+			.order('created_at', { ascending: true }),
+		supabase
+			.from('adoptions')
+			.select('id, user_id, adopted_at, adopter:profiles!user_id(id, full_name, avatar_url)')
+			.eq('project_id', params.id),
+		supabase
+			.from('milestones')
+			.select('id, title, description, category, xp_value, source, created_at')
+			.eq('project_id', params.id)
+			.order('created_at', { ascending: false }),
+		supabase
+			.from('next_steps')
+			.select('id, title, description, category, source, estimated_xp, completed, completed_at, implementation_status, pr_url, created_at')
+			.eq('project_id', params.id)
+			.order('completed', { ascending: true })
+			.order('created_at', { ascending: false }),
+		supabase
+			.from('ai_analyses')
+			.select('dpg_evaluation, idea_evaluation, synthesis')
+			.eq('project_id', params.id)
+			.order('analyzed_at', { ascending: false })
+			.limit(1)
+			.maybeSingle()
+	]);
 
 	if (!project) {
 		throw error(404, 'Project not found');
 	}
 
-	// Fetch team members, comments, adoptions, and milestones in parallel
-	const teamPromise = project.team_members?.length > 0
-		? supabase.from('profiles').select('*').in('id', project.team_members)
-		: Promise.resolve({ data: [] });
-
-	const commentsPromise = supabase
-		.from('comments')
-		.select('*, commenter:profiles!user_id(*)')
-		.eq('project_id', params.id)
-		.order('created_at', { ascending: true });
-
-	const adoptionsPromise = supabase
-		.from('adoptions')
-		.select('*, adopter:profiles!user_id(*)')
-		.eq('project_id', params.id);
-
-	const milestonesPromise = supabase
-		.from('milestones')
-		.select('*')
-		.eq('project_id', params.id)
-		.order('created_at', { ascending: false });
-
-	const nextStepsPromise = supabase
-		.from('next_steps')
-		.select('*')
-		.eq('project_id', params.id)
-		.order('completed', { ascending: true })
-		.order('created_at', { ascending: false });
-
-	const latestAnalysisPromise = supabase
-		.from('ai_analyses')
-		.select('dpg_evaluation, idea_evaluation, synthesis')
-		.eq('project_id', params.id)
-		.order('analyzed_at', { ascending: false })
-		.limit(1)
-		.single();
-
-	const [teamResult, commentsResult, adoptionsResult, milestonesResult, nextStepsResult, analysisResult] = await Promise.all([
-		teamPromise,
-		commentsPromise,
-		adoptionsPromise,
-		milestonesPromise,
-		nextStepsPromise,
-		latestAnalysisPromise
-	]);
-
-	// Fetch GitHub repo info if user has a connection and project has a repo_url
-	let repoInfo = null;
-	let contributors = null;
-	if (project.repo_url && session?.user?.id) {
-		const { data: ghConn } = await supabase
-			.from('github_connections')
-			.select('access_token')
-			.eq('user_id', session.user.id)
-			.single();
-
-		if (ghConn?.access_token) {
-			const parsed = parseRepoUrl(project.repo_url);
-			if (parsed) {
-				try {
-					[repoInfo, contributors] = await Promise.all([
-						getRepoInfo(ghConn.access_token, parsed.owner, parsed.repo),
-						getContributors(ghConn.access_token, parsed.owner, parsed.repo)
-					]);
-				} catch {
-					// GitHub API error — continue without repo data
-				}
-			}
-		}
-	}
-
-	// Check if current user is admin
-	let isAdmin = false;
-	if (session?.user?.id) {
-		const { data: userProfile } = await supabase
-			.from('profiles')
-			.select('is_admin')
-			.eq('id', session.user.id)
-			.single();
-		isAdmin = userProfile?.is_admin ?? false;
-	}
+	// Team members — only fetch if needed (after we know the project exists)
+	const teamMembers =
+		(project as any).team_members?.length > 0
+			? (
+					await supabase
+						.from('profiles')
+						.select('id, full_name, avatar_url, department')
+						.in('id', (project as any).team_members)
+				).data ?? []
+			: [];
 
 	return {
 		project,
-		teamMembers: teamResult.data ?? [],
+		teamMembers,
 		comments: commentsResult.data ?? [],
 		adoptions: adoptionsResult.data ?? [],
 		milestones: milestonesResult.data ?? [],
@@ -107,8 +76,9 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 		dpgEvaluation: analysisResult.data?.dpg_evaluation ?? null,
 		ideaEvaluation: analysisResult.data?.idea_evaluation ?? null,
 		synthesis: analysisResult.data?.synthesis ?? null,
-		repoInfo,
-		contributors,
+		// repoInfo and contributors are now fetched client-side via /projects/[id]/repo-info
+		repoInfo: null,
+		contributors: null,
 		userId: session?.user?.id ?? null,
 		isAdmin
 	};
