@@ -21,15 +21,36 @@
 		goto(`/projects?${params.toString()}`, { replaceState: true });
 	}
 
+	function clearFilters() {
+		filterStatus = 'all';
+		filterType = 'all';
+		sortBy = 'newest';
+		applyFilters();
+	}
+
 	const statuses = ['all', 'featured', 'submitted', 'draft'] as const;
 	const types = ['all', 'internal', 'community'] as const;
+
+	const sortLabels: Record<string, string> = {
+		newest: 'Newest',
+		cost: 'Most Saved',
+		hours: 'Most Hours',
+		adoption: 'Most Adopted'
+	};
 
 	const activeFilterCount = $derived(
 		(filterStatus !== 'all' ? 1 : 0) +
 		(filterType !== 'all' ? 1 : 0) +
 		(sortBy !== 'newest' ? 1 : 0)
 	);
+
+	// Close dropdown on Escape
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') filtersOpen = false;
+	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12 max-w-6xl mx-auto">
 	<!-- Header -->
@@ -37,73 +58,136 @@
 		<h1 class="heading-page">Projects</h1>
 		<a href="/submit" class="btn-primary px-5 py-2 text-sm">Submit</a>
 	</div>
-	<p class="text-base text-text-secondary mb-8 sm:mb-10 animate-fade-up stagger-2">{data.projects.length} {data.projects.length === 1 ? 'project' : 'projects'} from the community</p>
+	<p class="text-base text-text-secondary mb-8 sm:mb-10 animate-fade-up stagger-2">
+		{data.projects.length} {data.projects.length === 1 ? 'project' : 'projects'} from the community
+	</p>
 
-	<!-- Filters -->
+	<!-- Filters Bar -->
 	<div class="sticky top-14 z-30 bg-bg/90 backdrop-blur-sm border-b border-border py-3 -mx-5 sm:-mx-6 md:-mx-10 lg:-mx-16 px-5 sm:px-6 md:px-10 lg:px-16 animate-fade-up stagger-2">
-		<div class="flex items-center gap-3">
+		<div class="flex items-center gap-3 relative">
 			<input
 				type="text"
 				placeholder="Search projects..."
 				bind:value={search}
 				onkeydown={(e) => { if (e.key === 'Enter') applyFilters(); }}
-				class="input-box text-sm flex-1 sm:flex-initial sm:w-64 py-2 px-3"
+				class="input-box text-sm flex-1 py-2 px-3"
 			/>
 
-			<!-- Mobile: Filters button -->
+			<!-- Unified Filters button (same on all screen sizes) -->
 			<button
-				onclick={() => filtersOpen = true}
-				class="sm:hidden flex items-center gap-2 px-4 py-2 border border-border text-sm text-text min-h-[44px]"
+				onclick={() => filtersOpen = !filtersOpen}
+				class="flex items-center gap-2 px-4 py-2 border border-border text-sm text-text min-h-[44px] hover:bg-surface-alt transition-colors shrink-0"
+				aria-expanded={filtersOpen}
+				aria-haspopup="true"
 			>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
 				</svg>
-				Filters
+				<span>Filters</span>
 				{#if activeFilterCount > 0}
-					<span class="text-xs bg-text text-bg px-1.5 py-0.5">{activeFilterCount}</span>
+					<span class="text-xs bg-text text-bg px-1.5 py-0.5 font-medium">{activeFilterCount}</span>
 				{/if}
 			</button>
 
-			<!-- Desktop: inline filter pills -->
-			<div class="hidden sm:flex border border-border overflow-hidden">
-				{#each statuses as status}
-					<button
-						onclick={() => { filterStatus = status; applyFilters(); }}
-						class="px-3 py-2 text-xs font-medium transition-all duration-150 min-h-[36px]
-							{filterStatus === status
-							? 'bg-text text-bg'
-							: 'text-text-muted hover:text-text hover:bg-surface-alt'}"
-					>
-						{status.charAt(0).toUpperCase() + status.slice(1)}
-					</button>
-				{/each}
-			</div>
+			<!-- Desktop dropdown panel (anchored below the Filters button) -->
+			{#if filtersOpen}
+				<div class="hidden sm:block absolute top-full right-0 mt-2 w-80 bg-bg border border-border-strong shadow-2xl z-50 p-6 animate-fade-up">
+					<div class="flex items-center justify-between mb-5">
+						<h3 class="font-serif text-xl text-text">Filters</h3>
+						{#if activeFilterCount > 0}
+							<button onclick={clearFilters} class="text-xs text-text-muted link-draw">Clear all</button>
+						{/if}
+					</div>
 
-			<div class="hidden sm:flex border border-border overflow-hidden">
-				{#each types as type}
-					<button
-						onclick={() => { filterType = type; applyFilters(); }}
-						class="px-3 py-2 text-xs font-medium transition-all duration-150 min-h-[36px]
-							{filterType === type
-							? 'bg-text text-bg'
-							: 'text-text-muted hover:text-text hover:bg-surface-alt'}"
-					>
-						{type.charAt(0).toUpperCase() + type.slice(1)}
-					</button>
-				{/each}
-			</div>
+					<div class="space-y-5">
+						<!-- Status -->
+						<div>
+							<p class="heading-section mb-2.5">Status</p>
+							<div class="flex flex-wrap gap-1.5">
+								{#each statuses as status}
+									<button
+										onclick={() => filterStatus = status}
+										class="px-3 py-1.5 text-xs border border-border transition-colors
+											{filterStatus === status ? 'bg-text text-bg border-text' : 'text-text-muted hover:text-text'}"
+									>
+										{status.charAt(0).toUpperCase() + status.slice(1)}
+									</button>
+								{/each}
+							</div>
+						</div>
 
-			<select
-				bind:value={sortBy}
-				onchange={applyFilters}
-				class="hidden sm:block input-box text-sm py-2 px-3 w-auto"
-			>
-				<option value="newest">Newest</option>
-				<option value="cost">Most Saved</option>
-				<option value="hours">Most Hours</option>
-				<option value="adoption">Most Adopted</option>
-			</select>
+						<!-- Type -->
+						<div>
+							<p class="heading-section mb-2.5">Type</p>
+							<div class="flex flex-wrap gap-1.5">
+								{#each types as type}
+									<button
+										onclick={() => filterType = type}
+										class="px-3 py-1.5 text-xs border border-border transition-colors
+											{filterType === type ? 'bg-text text-bg border-text' : 'text-text-muted hover:text-text'}"
+									>
+										{type.charAt(0).toUpperCase() + type.slice(1)}
+									</button>
+								{/each}
+							</div>
+						</div>
+
+						<!-- Sort -->
+						<div>
+							<p class="heading-section mb-2.5">Sort by</p>
+							<select bind:value={sortBy} class="input-box text-sm w-full">
+								<option value="newest">Newest</option>
+								<option value="cost">Most Saved</option>
+								<option value="hours">Most Hours</option>
+								<option value="adoption">Most Adopted</option>
+							</select>
+						</div>
+
+						<button
+							onclick={() => { applyFilters(); filtersOpen = false; }}
+							class="btn-primary w-full text-sm"
+						>
+							Apply Filters
+						</button>
+					</div>
+				</div>
+			{/if}
 		</div>
+
+		<!-- Active filter chips (visible when filters applied) -->
+		{#if activeFilterCount > 0}
+			<div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
+				<span class="text-xs text-text-muted uppercase tracking-wider">Active:</span>
+				{#if filterStatus !== 'all'}
+					<button
+						onclick={() => { filterStatus = 'all'; applyFilters(); }}
+						class="text-xs px-2 py-1 border border-border bg-surface-alt text-text hover:border-text-muted transition-colors flex items-center gap-1"
+					>
+						{filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+						<span class="text-text-muted">×</span>
+					</button>
+				{/if}
+				{#if filterType !== 'all'}
+					<button
+						onclick={() => { filterType = 'all'; applyFilters(); }}
+						class="text-xs px-2 py-1 border border-border bg-surface-alt text-text hover:border-text-muted transition-colors flex items-center gap-1"
+					>
+						{filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+						<span class="text-text-muted">×</span>
+					</button>
+				{/if}
+				{#if sortBy !== 'newest'}
+					<button
+						onclick={() => { sortBy = 'newest'; applyFilters(); }}
+						class="text-xs px-2 py-1 border border-border bg-surface-alt text-text hover:border-text-muted transition-colors flex items-center gap-1"
+					>
+						{sortLabels[sortBy]}
+						<span class="text-text-muted">×</span>
+					</button>
+				{/if}
+				<button onclick={clearFilters} class="text-xs text-text-muted link-draw ml-1">Clear all</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Project List -->
@@ -123,13 +207,13 @@
 	</ScrollReveal>
 </div>
 
-<!-- Mobile Filter Drawer -->
+<!-- Mobile bottom sheet (and desktop click-outside catcher) -->
 {#if filtersOpen}
 	<button
 		type="button"
 		aria-label="Close filters"
 		onclick={() => filtersOpen = false}
-		class="sm:hidden fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm"
+		class="fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none"
 	></button>
 	<div class="sm:hidden fixed inset-x-0 bottom-0 z-50 bg-bg border-t border-border-strong px-5 pt-6 pb-8 max-h-[80vh] overflow-y-auto">
 		<div class="flex items-center justify-between mb-6">
@@ -181,10 +265,7 @@
 			<!-- Sort -->
 			<div>
 				<p class="heading-section mb-3">Sort</p>
-				<select
-					bind:value={sortBy}
-					class="input-box text-sm w-full"
-				>
+				<select bind:value={sortBy} class="input-box text-sm w-full">
 					<option value="newest">Newest</option>
 					<option value="cost">Most Saved</option>
 					<option value="hours">Most Hours</option>
