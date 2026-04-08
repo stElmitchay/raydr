@@ -8,17 +8,20 @@
     <!-- Globe outline -->
     <circle cx="64" cy="64" r="38"/>
 
-    <!-- Equator -->
+    <!-- Equator (visible front half — solid) -->
     <line x1="26" y1="64" x2="102" y2="64"/>
 
-    <!-- Latitude lines (parallels) — ellipses scaled to fit sphere -->
-    <ellipse cx="64" cy="64" rx="38" ry="19"/>
-
-    <!-- Meridian (vertical center) -->
+    <!-- Front meridian (visible) -->
     <line x1="64" y1="26" x2="64" y2="102"/>
 
-    <!-- Tilted meridians (longitude lines) — ellipses rotated -->
-    <ellipse cx="64" cy="64" rx="19" ry="38"/>
-    <ellipse cx="64" cy="64" rx="30" ry="38"/>
+    <!-- Front-facing longitude curves (only visible side, drawn as half-ellipses) -->
+    <path d="M 64 26 Q 50 64 64 102" />
+    <path d="M 64 26 Q 78 64 64 102" />
+    <path d="M 64 26 Q 36 64 64 102" />
+    <path d="M 64 26 Q 92 64 64 102" />
+
+    <!-- Latitude curves (visible front side only) -->
+    <path d="M 30 50 Q 64 56 98 50" />
+    <path d="M 30 78 Q 64 72 98 78" />
   </g>
 </svg>
