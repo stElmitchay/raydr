@@ -80,7 +80,7 @@
 		</button>
 
 		<!-- Nav Content -->
-		<nav class="flex flex-col justify-center px-8 md:px-16 lg:px-24 w-full max-w-5xl">
+		<nav class="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-24 w-full max-w-5xl">
 			{#each clusters as cluster, i}
 				<div
 					class="border-b border-overlay-text/10 py-4 md:py-5"

@@ -13,7 +13,7 @@
 	const maxToolCount = $derived(topTools.length > 0 ? topTools[0].count : 1);
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-10">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12">
 	<a href="/recaps" class="text-sm text-text-muted link-draw inline-block mb-8 animate-fade-up stagger-1">&larr; Recaps</a>
 
 	<h1 class="heading-page mb-2 animate-fade-up stagger-1">Demo {cycle}</h1>
@@ -21,24 +21,21 @@
 
 	<!-- Stats -->
 	<ScrollReveal>
-		<div class="flex items-center gap-0 border-t border-b border-border py-6 mb-10">
-			<div class="flex-1 text-center">
-				<p class="text-data text-2xl text-text">{stats.submissions}</p>
+		<div class="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border border-t border-b border-border mb-8 sm:mb-10">
+			<div class="bg-bg p-4 sm:p-6 text-center">
+				<p class="text-data text-xl sm:text-2xl text-text">{stats.submissions}</p>
 				<p class="heading-section mt-1">Submissions</p>
 			</div>
-			<div class="w-px h-8 bg-border"></div>
-			<div class="flex-1 text-center">
-				<p class="text-data text-2xl text-positive">${(stats.totalCost / 1000).toFixed(0)}K</p>
+			<div class="bg-bg p-4 sm:p-6 text-center">
+				<p class="text-data text-xl sm:text-2xl text-positive">${(stats.totalCost / 1000).toFixed(0)}K</p>
 				<p class="heading-section mt-1">Cost Saved</p>
 			</div>
-			<div class="w-px h-8 bg-border"></div>
-			<div class="flex-1 text-center">
-				<p class="text-data text-2xl text-text">{stats.totalHours}h</p>
+			<div class="bg-bg p-4 sm:p-6 text-center">
+				<p class="text-data text-xl sm:text-2xl text-text">{stats.totalHours}h</p>
 				<p class="heading-section mt-1">Hours Saved</p>
 			</div>
-			<div class="w-px h-8 bg-border"></div>
-			<div class="flex-1 text-center">
-				<p class="text-data text-2xl text-text">{stats.departments}</p>
+			<div class="bg-bg p-4 sm:p-6 text-center">
+				<p class="text-data text-xl sm:text-2xl text-text">{stats.departments}</p>
 				<p class="heading-section mt-1">Departments</p>
 			</div>
 		</div>

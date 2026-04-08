@@ -5,21 +5,21 @@
 	let view = $state<'builders' | 'projects'>('builders');
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-10">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12">
 	<!-- Header + Toggle -->
-	<div class="flex items-baseline justify-between mb-10 animate-fade-up stagger-1">
+	<div class="flex items-baseline justify-between mb-8 sm:mb-10 animate-fade-up stagger-1">
 		<h1 class="heading-page">Leaderboard</h1>
 		<div class="flex gap-4 text-sm">
 			<button
 				onclick={() => view = 'builders'}
-				class="pb-1 transition-all duration-150
+				class="pb-2 min-h-[44px] transition-all duration-150
 					{view === 'builders'
 					? 'text-text border-b-2 border-text font-medium'
 					: 'text-text-muted hover:text-text'}"
 			>Builders</button>
 			<button
 				onclick={() => view = 'projects'}
-				class="pb-1 transition-all duration-150
+				class="pb-2 min-h-[44px] transition-all duration-150
 					{view === 'projects'
 					? 'text-text border-b-2 border-text font-medium'
 					: 'text-text-muted hover:text-text'}"
@@ -31,12 +31,12 @@
 		<!-- Podium -->
 		{#if data.builders.length >= 3}
 			<ScrollReveal>
-				<div class="grid grid-cols-3 gap-px bg-border mb-12">
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border mb-10 sm:mb-12">
 					{#each [1, 0, 2] as idx, i}
 						{@const builder = data.builders[idx]}
 						{@const rankLabels = ['02', '01', '03']}
 						{#if builder}
-							<div class="bg-bg p-6 md:p-8 text-center {i === 1 ? 'bg-surface-alt py-10 md:py-12' : ''}">
+							<div class="bg-bg p-6 md:p-8 text-center {i === 1 ? 'bg-surface-alt py-8 sm:py-10 md:py-12 order-first sm:order-none' : ''}">
 								<span class="text-data text-3xl md:text-4xl {i === 1 ? 'text-text' : 'text-text-muted'}">{rankLabels[i]}</span>
 								<div class="mt-4">
 									{#if builder.avatar_url}

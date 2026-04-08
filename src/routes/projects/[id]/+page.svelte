@@ -49,14 +49,14 @@
 	}
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-12 max-w-5xl mx-auto">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12 max-w-5xl mx-auto">
 	<!-- Back -->
-	<a href="/projects" class="text-sm text-text-muted link-draw inline-block mb-10 animate-fade-up stagger-1">&larr; Projects</a>
+	<a href="/projects" class="text-sm text-text-muted link-draw inline-block mb-8 sm:mb-10 animate-fade-up stagger-1">&larr; Projects</a>
 
 	<!-- Title -->
-	<div class="flex items-start justify-between gap-6 mb-6 animate-fade-up stagger-1">
-		<h1 class="heading-display text-[clamp(2.75rem,5.5vw,4rem)] text-text">{project.title}</h1>
-		<div class="flex items-center gap-3 flex-shrink-0 pt-3">
+	<div class="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-6 mb-6 animate-fade-up stagger-1">
+		<h1 class="heading-display text-[clamp(2rem,7vw,4rem)] text-text">{project.title}</h1>
+		<div class="flex items-center flex-wrap gap-3 flex-shrink-0 sm:pt-3">
 			{#if dpgEvaluation}
 				<span class="tag">{dpgEvaluation.overall_score}/100</span>
 			{/if}
@@ -73,16 +73,16 @@
 		</div>
 	</div>
 
-	<p class="text-body max-w-3xl mb-12 animate-fade-up stagger-2">{project.description}</p>
+	<p class="text-body max-w-3xl mb-10 sm:mb-12 animate-fade-up stagger-2">{project.description}</p>
 
 	<!-- Analysis Summary (Synthesis) -->
 	{#if synthesis}
 		<ScrollReveal>
-			<div class="border-t border-border pt-10 mb-12">
+			<div class="border-t border-border pt-8 sm:pt-10 mb-10 sm:mb-12">
 				<h3 class="heading-section mb-6">Analysis Summary</h3>
-				<p class="font-serif italic text-2xl md:text-3xl text-text leading-snug max-w-4xl mb-10">"{synthesis.summary}"</p>
+				<p class="font-serif italic text-xl sm:text-2xl md:text-3xl text-text leading-snug max-w-4xl mb-8 sm:mb-10">"{synthesis.summary}"</p>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
 					{#if synthesis.strengths?.length}
 						<div>
 							<h4 class="heading-section mb-4 text-positive">What's Working</h4>
@@ -116,19 +116,17 @@
 
 	<!-- Metrics Row -->
 	<ScrollReveal>
-		<div class="flex items-center gap-0 border-t border-b border-border py-8 mb-12">
-			<div class="flex-1 text-center">
-				<p class="text-data text-3xl text-positive">${((project.annual_cost_replaced ?? 0) / 1000).toFixed(0)}K</p>
+		<div class="grid grid-cols-3 gap-px bg-border border-t border-b border-border mb-10 sm:mb-12">
+			<div class="bg-bg py-6 sm:py-8 px-2 text-center">
+				<p class="text-data text-2xl sm:text-3xl text-positive">${((project.annual_cost_replaced ?? 0) / 1000).toFixed(0)}K</p>
 				<p class="heading-section mt-2">Saved / year</p>
 			</div>
-			<div class="w-px h-10 bg-border"></div>
-			<div class="flex-1 text-center">
-				<p class="text-data text-3xl text-text">{project.estimated_hours_saved_weekly ?? 0}h</p>
+			<div class="bg-bg py-6 sm:py-8 px-2 text-center">
+				<p class="text-data text-2xl sm:text-3xl text-text">{project.estimated_hours_saved_weekly ?? 0}h</p>
 				<p class="heading-section mt-2">Saved / week</p>
 			</div>
-			<div class="w-px h-10 bg-border"></div>
-			<div class="flex-1 text-center">
-				<p class="text-data text-3xl text-text">{project.adoption_count ?? 0}</p>
+			<div class="bg-bg py-6 sm:py-8 px-2 text-center">
+				<p class="text-data text-2xl sm:text-3xl text-text">{project.adoption_count ?? 0}</p>
 				<p class="heading-section mt-2">Adoptions</p>
 			</div>
 		</div>
@@ -143,7 +141,7 @@
 					<span class="text-data text-2xl text-text">{ideaEvaluation.overall_score}<span class="text-sm text-text-muted">/100</span></span>
 				</div>
 
-				<p class="font-serif italic text-xl text-text mb-8 max-w-3xl leading-snug">"{ideaEvaluation.one_line_verdict}"</p>
+				<p class="font-serif italic text-lg sm:text-xl text-text mb-6 sm:mb-8 max-w-3xl leading-snug">"{ideaEvaluation.one_line_verdict}"</p>
 
 				<!-- Score breakdown -->
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
@@ -162,7 +160,7 @@
 				</div>
 
 				<!-- Strengths / Concerns / Recommendations -->
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
 					{#if ideaEvaluation.strengths?.length}
 						<div>
 							<h4 class="heading-section mb-3 text-positive">Strengths</h4>
@@ -210,7 +208,7 @@
 	<!-- 1+2. Demo + Repository (side by side) -->
 	{#if project.demo_url || repoInfo}
 		<ScrollReveal>
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-10 sm:mb-12">
 				{#if project.demo_url}
 					{@const embedUrl = getEmbedUrl(project.demo_url)}
 					<div>
@@ -420,8 +418,8 @@
 
 	<!-- 4. Project Details (Problem/Solution + Tech) -->
 	<ScrollReveal>
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-0 mb-12 border border-border">
-			<div class="p-8 md:p-10 space-y-8">
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-0 mb-10 sm:mb-12 border border-border">
+			<div class="p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8">
 				<div>
 					<h3 class="heading-section mb-3">Problem</h3>
 					<p class="text-body">{project.problem_statement}</p>
@@ -431,7 +429,7 @@
 					<p class="text-body">{project.solution_summary}</p>
 				</div>
 			</div>
-			<div class="p-8 md:p-10 space-y-8 bg-surface-alt border-t md:border-t-0 md:border-l border-border">
+			<div class="p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8 bg-surface-alt border-t md:border-t-0 md:border-l border-border">
 				{#if project.replaces_tool}
 					<div>
 						<h3 class="heading-section mb-3">Replaces</h3>

@@ -26,9 +26,9 @@
 	}
 </script>
 
-<div class="space-y-8">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12 space-y-8">
 	<!-- Hero Banner -->
-	<div class="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-surface to-accent/5 p-8 md:p-12">
+	<div class="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-surface to-accent/5 p-6 sm:p-8 md:p-12">
 		<div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 		<div class="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 		<div class="relative">
@@ -39,7 +39,7 @@
 				</span>
 				<span class="text-xs font-medium text-primary-light uppercase tracking-widest">Live</span>
 			</div>
-			<h1 class="text-4xl md:text-5xl font-display font-bold text-text tracking-tighter">Demo Day</h1>
+			<h1 class="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-text tracking-tighter">Demo Day</h1>
 			<p class="text-lg text-text-secondary mt-2">
 				{#if data.cycleTheme}<span class="italic">{data.cycleTheme.name}</span> &middot; {/if}Cycle {data.demoCycle}{data.season ? ` · ${data.season.name}` : ''}
 			</p>
@@ -49,20 +49,20 @@
 
 	<!-- Stats -->
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-5">
-		<div class="glass-card p-6 text-center">
-			<p class="text-3xl font-bold font-mono text-primary-light">{stats.projectCount}</p>
+		<div class="glass-card p-5 sm:p-6 text-center">
+			<p class="text-2xl sm:text-3xl font-bold font-mono text-primary-light">{stats.projectCount}</p>
 			<p class="text-xs text-text-muted mt-1 uppercase tracking-wider">Projects</p>
 		</div>
-		<div class="glass-card p-6 text-center">
-			<p class="text-3xl font-bold font-mono text-accent-light">{stats.milestoneCount}</p>
+		<div class="glass-card p-5 sm:p-6 text-center">
+			<p class="text-2xl sm:text-3xl font-bold font-mono text-accent-light">{stats.milestoneCount}</p>
 			<p class="text-xs text-text-muted mt-1 uppercase tracking-wider">Milestones</p>
 		</div>
-		<div class="glass-card p-6 text-center">
-			<p class="text-3xl font-bold font-mono text-success">{stats.xpAwarded.toLocaleString()}</p>
+		<div class="glass-card p-5 sm:p-6 text-center">
+			<p class="text-2xl sm:text-3xl font-bold font-mono text-success">{stats.xpAwarded.toLocaleString()}</p>
 			<p class="text-xs text-text-muted mt-1 uppercase tracking-wider">XP Awarded</p>
 		</div>
-		<div class="glass-card p-6 text-center">
-			<p class="text-3xl font-bold font-mono text-text">{stats.departmentCount}</p>
+		<div class="glass-card p-5 sm:p-6 text-center">
+			<p class="text-2xl sm:text-3xl font-bold font-mono text-text">{stats.departmentCount}</p>
 			<p class="text-xs text-text-muted mt-1 uppercase tracking-wider">Departments</p>
 		</div>
 	</div>

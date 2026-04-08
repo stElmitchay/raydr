@@ -33,7 +33,7 @@
 	}
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-10">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12">
 	<h1 class="heading-page mb-2 animate-fade-up stagger-1">Challenges</h1>
 	<p class="text-sm text-text-muted mb-10 animate-fade-up stagger-2">Department competitions</p>
 
@@ -63,9 +63,9 @@
 								{@const pct = Math.min(100, (progress / Math.max(1, challenge.target)) * 100)}
 								{@const completed = pct >= 100}
 								<div>
-									<div class="flex justify-between mb-1">
-										<span class="text-sm text-text">{dept}</span>
-										<span class="text-xs text-data {completed ? 'text-positive font-semibold' : 'text-text-muted'}">
+									<div class="flex justify-between gap-3 mb-1">
+										<span class="text-sm text-text truncate min-w-0">{dept}</span>
+										<span class="text-xs text-data shrink-0 {completed ? 'text-positive font-semibold' : 'text-text-muted'}">
 											{formatProgress(progress, challenge.metric)} / {formatProgress(challenge.target, challenge.metric)}
 										</span>
 									</div>

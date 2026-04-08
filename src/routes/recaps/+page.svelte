@@ -4,7 +4,7 @@
 	const cycles = $derived(data.cycles ?? []);
 </script>
 
-<div class="px-6 md:px-10 lg:px-16 py-10">
+<div class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12">
 	<h1 class="heading-page mb-2 animate-fade-up stagger-1">Demo Recaps</h1>
 	{#if season}
 		<p class="text-sm text-text-muted mb-10 animate-fade-up stagger-2">{season.name}</p>

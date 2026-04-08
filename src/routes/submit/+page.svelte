@@ -172,7 +172,7 @@
 </div>
 
 <!-- Step Counter -->
-<div class="fixed top-16 right-6 md:right-10 z-40 text-data text-sm text-text-muted">
+<div class="fixed top-16 right-5 sm:right-6 md:right-10 z-40 text-data text-sm text-text-muted">
 	{String(currentStep + 1).padStart(2, '0')} <span class="text-text-muted/50">/ {String(totalSteps).padStart(2, '0')}</span>
 </div>
 
@@ -200,7 +200,7 @@
 		class="sr-only"
 	/>
 
-	<div class="w-full max-w-2xl mx-auto px-6 md:px-10 py-20">
+	<div class="w-full max-w-2xl mx-auto px-5 sm:px-6 md:px-10 py-16 sm:py-20">
 		{#key currentStep}
 			<div
 				in:fly={{ y: 30, duration: 400, easing: cubicOut, delay: 50 }}
@@ -268,13 +268,13 @@
 								bind:value={values[step.name]}
 								placeholder={step.placeholder}
 								rows="3"
-								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-xl md:text-2xl text-text placeholder:text-text-muted/50 resize-none py-3 transition-colors leading-snug"
+								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-lg sm:text-xl md:text-2xl text-text placeholder:text-text-muted/50 resize-none py-3 transition-colors leading-snug"
 							></textarea>
 						{:else if step.type === 'select'}
 							<select
 								bind:this={inputEl as HTMLSelectElement}
 								bind:value={values[step.name]}
-								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-xl md:text-2xl text-text py-3 transition-colors"
+								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-lg sm:text-xl md:text-2xl text-text py-3 transition-colors"
 							>
 								{#each step.options ?? [] as opt (opt.value)}
 									<option value={opt.value} class="bg-surface text-text">{opt.label}</option>
@@ -284,7 +284,7 @@
 							<button
 								type="button"
 								onclick={() => fileInputEl?.click()}
-								class="w-full border-2 border-dashed border-border hover:border-border-strong hover:bg-surface-alt transition-colors py-12 text-center group"
+								class="w-full border-2 border-dashed border-border hover:border-border-strong hover:bg-surface-alt transition-colors py-8 sm:py-12 text-center group"
 							>
 								{#if screenshots.length > 0}
 									<p class="text-xl text-text font-serif">
@@ -304,7 +304,7 @@
 								bind:value={values[step.name]}
 								type={step.type}
 								placeholder={step.placeholder}
-								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-2xl md:text-3xl text-text placeholder:text-text-muted/50 py-3 transition-colors"
+								class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-xl sm:text-2xl md:text-3xl text-text placeholder:text-text-muted/50 py-3 transition-colors"
 							/>
 						{/if}
 					</div>

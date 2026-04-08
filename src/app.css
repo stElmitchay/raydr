@@ -63,7 +63,7 @@ body {
 
 .heading-page {
 	font-family: var(--font-serif);
-	font-size: 3rem;
+	font-size: clamp(2rem, 5.5vw, 3rem);
 	font-weight: 400;
 	line-height: 1.1;
 	letter-spacing: -0.015em;
@@ -81,7 +81,7 @@ body {
 
 .text-body {
 	font-family: var(--font-sans);
-	font-size: 1.0625rem;
+	font-size: clamp(1rem, 1.5vw, 1.0625rem);
 	line-height: 1.65;
 	color: var(--color-text);
 	font-weight: 400;
@@ -121,6 +121,7 @@ body {
 	font-size: 0.9375rem;
 	font-weight: 500;
 	padding: 0.75rem 1.5rem;
+	min-height: 44px;
 	transition: background 150ms ease, opacity 150ms ease;
 }
 .btn-primary:hover {
@@ -145,6 +146,7 @@ body {
 	font-size: 0.9375rem;
 	font-weight: 500;
 	padding: 0.75rem 1.5rem;
+	min-height: 44px;
 	transition: background 150ms ease, border-color 150ms ease;
 }
 .btn-secondary:hover {
@@ -162,6 +164,7 @@ body {
 	border: 0;
 	border-bottom: 1px solid var(--color-border);
 	padding: 0.75rem 0;
+	min-height: 44px;
 	font-family: var(--font-sans);
 	font-size: 1rem;
 	color: var(--color-text);
@@ -180,6 +183,7 @@ body {
 	background: var(--color-surface);
 	border: 1px solid var(--color-border);
 	padding: 0.75rem 0.875rem;
+	min-height: 44px;
 	font-family: var(--font-sans);
 	font-size: 1rem;
 	color: var(--color-text);
@@ -242,7 +246,7 @@ body {
 .editorial-row {
 	display: flex;
 	align-items: center;
-	padding: 1.5rem 0;
+	padding: clamp(1rem, 2vw, 1.5rem) 0;
 	border-bottom: 1px solid var(--color-border);
 	transition: background 150ms ease, padding-left 200ms ease;
 	cursor: pointer;

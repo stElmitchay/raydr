@@ -63,7 +63,7 @@
 </script>
 
 <!-- Hero Section -->
-<section class="min-h-[65vh] flex flex-col justify-end px-6 md:px-10 lg:px-16 pb-12 relative overflow-hidden">
+<section class="min-h-[70vh] sm:min-h-[65vh] flex flex-col justify-end px-5 sm:px-6 md:px-10 lg:px-16 pb-10 sm:pb-12 relative overflow-hidden">
 
 	<!-- Ambient neural network visualization -->
 	<NeuralAmbient />
@@ -79,7 +79,7 @@
 				{data.season?.name ?? 'Season'} &mdash; Cycle {data.currentCycle}
 			</p>
 			{#if data.cycleTheme}
-				<h2 class="font-serif italic text-3xl md:text-4xl text-text mt-3" style="letter-spacing: -0.02em;">
+				<h2 class="font-serif italic text-2xl sm:text-3xl md:text-4xl text-text mt-3" style="letter-spacing: -0.02em;">
 					{data.cycleTheme.name}
 				</h2>
 				<p class="text-sm text-text-muted mt-2 max-w-md">{data.cycleTheme.description}</p>
@@ -87,9 +87,9 @@
 		</div>
 
 		<!-- Rotating tagline -->
-		<div class="mt-10 animate-fade-up stagger-2">
+		<div class="mt-8 sm:mt-10 animate-fade-up stagger-2">
 			<p
-				class="font-serif italic text-text-secondary text-lg md:text-xl transition-opacity duration-700"
+				class="font-serif italic text-text-secondary text-base sm:text-lg md:text-xl transition-opacity duration-700"
 				style="min-height: 2em;"
 			>
 				{taglines[taglineIndex]}
@@ -107,7 +107,7 @@
 
 			<!-- Demo Countdown -->
 			<div class="animate-fade-up stagger-3 text-right">
-				<span class="text-data text-5xl md:text-6xl text-text">{data.daysUntilDemo}</span>
+				<span class="text-data text-4xl sm:text-5xl md:text-6xl text-text">{data.daysUntilDemo}</span>
 				<p class="heading-section mt-2">Days until demo</p>
 				<p class="text-sm text-text-muted mt-1">
 					{new Date(data.nextDemoDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -116,21 +116,21 @@
 		</div>
 
 		<!-- Secondary Metrics -->
-		<div class="animate-fade-up stagger-3 mt-8 pt-6 border-t border-border flex flex-wrap gap-10 md:gap-16">
+		<div class="animate-fade-up stagger-3 mt-8 pt-6 border-t border-border grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 md:gap-12">
 			<div>
-				<span class="text-data text-3xl">{data.totals?.total_projects ?? 0}</span>
+				<span class="text-data text-2xl sm:text-3xl">{data.totals?.total_projects ?? 0}</span>
 				<p class="heading-section mt-1.5">Projects</p>
 			</div>
 			<div>
-				<span class="text-data text-3xl">{data.totals?.total_hours_saved ?? 0}</span>
+				<span class="text-data text-2xl sm:text-3xl">{data.totals?.total_hours_saved ?? 0}</span>
 				<p class="heading-section mt-1.5">Hours saved / week</p>
 			</div>
 			<div>
-				<span class="text-data text-3xl">{data.totals?.total_adoptions ?? 0}</span>
+				<span class="text-data text-2xl sm:text-3xl">{data.totals?.total_adoptions ?? 0}</span>
 				<p class="heading-section mt-1.5">Adoptions</p>
 			</div>
 			<div>
-				<span class="text-data text-3xl">{data.totals?.active_builders ?? 0}</span>
+				<span class="text-data text-2xl sm:text-3xl">{data.totals?.active_builders ?? 0}</span>
 				<p class="heading-section mt-1.5">Builders</p>
 			</div>
 		</div>
@@ -139,7 +139,7 @@
 
 <!-- Featured Projects — Horizontal Scroll -->
 <ScrollReveal>
-	<section class="px-6 md:px-10 lg:px-16 py-12">
+	<section class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12">
 		<div class="flex items-baseline justify-between mb-6">
 			<h2 class="heading-page">Featured</h2>
 			<a href="/projects" class="text-base text-text-secondary link-draw">View all</a>
@@ -186,7 +186,7 @@
 
 <!-- Department Rankings + Recent — editorial layout -->
 <ScrollReveal>
-	<section class="px-6 md:px-10 lg:px-16 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 border-t border-border">
+	<section class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12 grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-20 border-t border-border">
 		<!-- Department Rankings -->
 		<div>
 			<h2 class="heading-section mb-8">Departments</h2>
@@ -243,7 +243,7 @@
 
 <!-- Inline Analytics (Collapsible) -->
 <ScrollReveal>
-	<section class="px-6 md:px-10 lg:px-16 py-12 border-t border-border">
+	<section class="px-5 sm:px-6 md:px-10 lg:px-16 py-10 sm:py-12 border-t border-border">
 		<button
 			onclick={() => showAnalytics = !showAnalytics}
 			class="w-full flex items-center justify-between py-2 group"

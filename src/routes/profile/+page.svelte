@@ -31,7 +31,7 @@
 	});
 </script>
 
-<div class="max-w-2xl mx-auto px-6 md:px-10 py-10">
+<div class="max-w-2xl mx-auto px-5 sm:px-6 md:px-10 py-10 sm:py-12">
 	<!-- Header -->
 	<div class="flex items-baseline justify-between mb-8 animate-fade-up stagger-1">
 		<h1 class="heading-page">Profile</h1>

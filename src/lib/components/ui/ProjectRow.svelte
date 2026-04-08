@@ -13,8 +13,8 @@
 
 <a href="/projects/{project.id}" class="editorial-row group">
 	<!-- Title + submitter -->
-	<div class="flex-1 min-w-0 pr-6">
-		<h3 class="font-serif text-2xl text-text leading-tight truncate">
+	<div class="flex-1 min-w-0 pr-3 sm:pr-6">
+		<h3 class="font-serif text-lg sm:text-xl md:text-2xl text-text leading-tight truncate">
 			{project.title}
 		</h3>
 		{#if project.description}
@@ -41,7 +41,7 @@
 	</div>
 
 	<!-- Cost -->
-	<div class="text-data text-base flex-shrink-0 text-right w-28 {project.annual_cost_replaced ? 'text-positive' : 'text-text-muted'}">
+	<div class="text-data text-sm sm:text-base flex-shrink-0 text-right w-20 sm:w-28 {project.annual_cost_replaced ? 'text-positive' : 'text-text-muted'}">
 		{formatCost(project.annual_cost_replaced)}
 	</div>
 </a>
