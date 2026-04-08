@@ -12,9 +12,8 @@
 
 <header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 sm:px-6 md:px-10 h-14 bg-bg/80 backdrop-blur-sm border-b border-border/50">
 	<!-- Left: Logo -->
-	<a href="/" class="flex items-center gap-2.5 min-h-[44px] text-text hover:text-text-secondary transition-colors">
-		<Logo size={22} strokeWidth={2.5} />
-		<span class="font-serif text-xl">Raydr</span>
+	<a href="/" class="flex items-center min-h-[44px] text-text hover:text-text-secondary transition-colors" aria-label="Raydr home">
+		<Logo size={26} strokeWidth={2.5} />
 	</a>
 
 	<!-- Right: Actions -->

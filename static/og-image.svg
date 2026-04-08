@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0C0B09"/>
+
+  <!-- Subtle grain via radial gradient -->
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1A1714" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0C0B09" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#vignette)"/>
+
+  <!-- Inner border -->
+  <rect x="32" y="32" width="1136" height="566" fill="none" stroke="#2A2621" stroke-width="2"/>
+
+  <!-- Globe (left side, large) -->
+  <g transform="translate(180, 145)" fill="none" stroke="#E8E2D9" stroke-width="6" stroke-linecap="round">
+    <!-- Globe outline -->
+    <circle cx="170" cy="170" r="160"/>
+
+    <!-- Equator -->
+    <line x1="10" y1="170" x2="330" y2="170"/>
+
+    <!-- Front meridian -->
+    <line x1="170" y1="10" x2="170" y2="330"/>
+
+    <!-- Front-facing longitude curves -->
+    <path d="M 170 10 Q 110 170 170 330" />
+    <path d="M 170 10 Q 230 170 170 330" />
+    <path d="M 170 10 Q 50 170 170 330" />
+    <path d="M 170 10 Q 290 170 170 330" />
+
+    <!-- Front-facing latitude curves -->
+    <path d="M 25 110 Q 170 135 315 110" />
+    <path d="M 25 230 Q 170 205 315 230" />
+  </g>
+
+  <!-- Text content (right side) -->
+  <g transform="translate(580, 215)">
+    <!-- Eyebrow -->
+    <text x="0" y="0" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#7A7269" letter-spacing="4" text-transform="uppercase">A DEVELOPER PLATFORM</text>
+
+    <!-- Wordmark -->
+    <text x="0" y="100" font-family="Georgia, 'Times New Roman', serif" font-size="140" font-weight="400" fill="#E8E2D9" letter-spacing="-3">Raydr</text>
+
+    <!-- Tagline -->
+    <text x="0" y="160" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-style="italic" fill="#B5AFA6">Build. Ship. Demo. Repeat.</text>
+
+    <!-- Subline -->
+    <text x="0" y="220" font-family="-apple-system, system-ui, sans-serif" font-size="20" fill="#7A7269">AI-powered project tracking with monthly demo cycles</text>
+  </g>
+
+  <!-- Bottom-left meta -->
+  <g transform="translate(80, 560)">
+    <text x="0" y="0" font-family="-apple-system, system-ui, sans-serif" font-size="16" fill="#7A7269" letter-spacing="2">RAYDR · A CHRISTEX FOUNDATION PROJECT</text>
+  </g>
+</svg>
