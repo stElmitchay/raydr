@@ -160,10 +160,9 @@
 	<div class="w-full max-w-sm">
 		<div class="text-center mb-10 text-text">
 			<div class="flex justify-center">
-				<Logo size={56} strokeWidth={2} />
+				<Logo size={64} strokeWidth={2} />
 			</div>
-			<h1 class="mt-4 heading-page">Raydr</h1>
-			<p class="mt-2 text-sm text-text-secondary">{subtitle}</p>
+			<p class="mt-6 text-sm text-text-secondary">{subtitle}</p>
 		</div>
 
 		{#if error}
