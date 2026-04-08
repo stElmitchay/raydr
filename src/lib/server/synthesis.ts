@@ -31,7 +31,7 @@ export interface SynthesisResult {
 export async function synthesizeEvaluations(input: SynthesisInput): Promise<SynthesisResult> {
 	const { ideaEval, dpgEval, progressAnalysis, projectContext } = input;
 
-	const system = `You are the lead reviewer for Sinai, a developer platform. You have just received three independent evaluations of a project:
+	const system = `You are the lead reviewer for Raydr, a developer platform. You have just received three independent evaluations of a project:
 
 1. **Idea Evaluation** — scores the concept (problem clarity, solution fit, novelty, audience clarity, feasibility, impact)
 2. **DPG Evaluation** — scores Digital Public Goods compliance across 9 indicators

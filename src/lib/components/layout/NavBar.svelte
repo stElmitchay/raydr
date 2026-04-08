@@ -12,7 +12,7 @@
 <header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 sm:px-6 md:px-10 h-14 bg-bg/80 backdrop-blur-sm border-b border-border/50">
 	<!-- Left: Logo -->
 	<a href="/" class="flex items-center gap-2.5 link-draw min-h-[44px]">
-		<span class="font-serif text-xl text-text">Sinai</span>
+		<span class="font-serif text-xl text-text">Raydr</span>
 	</a>
 
 	<!-- Right: Actions -->

@@ -158,8 +158,8 @@
 <div class="flex min-h-[80vh] items-center justify-center px-6">
 	<div class="w-full max-w-sm">
 		<div class="text-center mb-10">
-			<span class="font-serif text-5xl italic text-text">S</span>
-			<h1 class="mt-4 heading-page">Sinai TrackAM</h1>
+			<span class="font-serif text-5xl italic text-text">R</span>
+			<h1 class="mt-4 heading-page">Raydr</h1>
 			<p class="mt-2 text-sm text-text-secondary">{subtitle}</p>
 		</div>
 

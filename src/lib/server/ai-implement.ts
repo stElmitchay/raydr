@@ -120,7 +120,7 @@ Implement the goal. Return the JSON with file changes.`;
 	}
 
 	// Step 5: Create branch, commit files, open PR
-	const branchName = `sinai/implement-${milestone.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-${Date.now()}`;
+	const branchName = `raydr/implement-${milestone.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-${Date.now()}`;
 
 	await createBranch(token, owner, repo, branchName, repoInfo.default_branch);
 
@@ -129,14 +129,14 @@ Implement the goal. Return the JSON with file changes.`;
 			token, owner, repo,
 			file.path,
 			file.content,
-			`${file.action === 'create' ? 'feat' : 'update'}: ${milestone.title}\n\nImplemented by Sinai TrackAM AI`,
+			`${file.action === 'create' ? 'feat' : 'update'}: ${milestone.title}\n\nImplemented by Raydr AI`,
 			branchName
 		);
 	}
 
 	const pr = await createPullRequest(token, owner, repo, {
 		title: plan.pr_title || `feat: ${milestone.title}`,
-		body: `${plan.pr_body || milestone.description}\n\n---\n*Implemented by Sinai TrackAM AI*`,
+		body: `${plan.pr_body || milestone.description}\n\n---\n*Implemented by Raydr AI*`,
 		head: branchName,
 		base: repoInfo.default_branch
 	});

@@ -65,7 +65,7 @@ export async function callClaude(system: string, userMessage: string): Promise<s
 }
 
 export async function analyzeRepoProgress(input: AnalysisInput): Promise<AnalysisResult> {
-	const system = `You are a technical project analyst for Sinai, a platform where developers submit and track their projects. Analyze the GitHub repository activity and identify concrete milestones achieved.
+	const system = `You are a technical project analyst for Raydr, a platform where developers submit and track their projects. Analyze the GitHub repository activity and identify concrete milestones achieved.
 
 For each milestone, categorize it as one of: feature, bugfix, docs, refactor, test, infra, other.
 Suggest XP points per milestone (${AI_XP_PER_MILESTONE_MIN}-${AI_XP_PER_MILESTONE_MAX} based on significance).

@@ -29,7 +29,7 @@
 		<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white font-bold text-sm shadow-[0_0_20px_rgba(139,92,246,0.3)]">
 			S
 		</div>
-		<span class="text-lg font-display font-semibold tracking-tight text-text">Sinai</span>
+		<span class="text-lg font-display font-semibold tracking-tight text-text">Raydr</span>
 	</div>
 
 	<!-- Nav -->

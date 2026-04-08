@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Sinai TrackAM — an open platform where both Christex Foundation employees (internal) and the broader community submit software projects, get AI-powered progress analysis via GitHub integration, and earn XP through monthly demo cycles. Gamification layer includes XP/leveling, milestones, leaderboards, and achievement badges.
+Raydr — an open platform where both Christex Foundation employees (internal) and the broader community submit software projects, get AI-powered progress analysis via GitHub integration, and earn XP through monthly demo cycles. Gamification layer includes XP/leveling, milestones, leaderboards, and achievement badges.
 
 ## Commands
 

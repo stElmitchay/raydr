@@ -1,5 +1,5 @@
 -- ============================================
--- SINAI TRACKER - Complete Supabase Setup
+-- RAYDR - Complete Supabase Setup
 -- ============================================
 -- Paste this ENTIRE script into Supabase SQL Editor and run it once.
 -- Go to: Supabase Dashboard > SQL Editor > New Query > Paste > Run
@@ -244,7 +244,7 @@ values ('Season 1', '2026-02-01', '2026-04-30', true);
 
 -- Seed achievements
 insert into achievements (name, description, icon, criteria, xp_reward) values
-  ('First Ship', 'Submit your first Sinai project', '🚀', 'first_submission', 100),
+  ('First Ship', 'Submit your first Raydr project', '🚀', 'first_submission', 100),
   ('10x Saver', 'Save 10x more than the tool costs', '💰', 'cost_saved_10x', 500),
   ('Serial Builder', 'Submit 5 weeks in a row', '🔥', 'streak_5', 300),
   ('Team Player', 'Collaborate with 3+ departments', '🤝', 'cross_dept_3', 250),

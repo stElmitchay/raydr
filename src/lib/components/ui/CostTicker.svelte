@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { targetValue, label = 'Total Saved by Sinai' }: { targetValue: number; label?: string } = $props();
+	let { targetValue, label = 'Total Saved by Raydr' }: { targetValue: number; label?: string } = $props();
 
 	let displayValue = $state(0);
 

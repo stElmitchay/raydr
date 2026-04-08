@@ -3,6 +3,6 @@
   <rect width="128" height="128" fill="#0C0B09"/>
   <!-- Thin border -->
   <rect x="2" y="2" width="124" height="124" fill="none" stroke="#2A2621" stroke-width="2"/>
-  <!-- Serif "S" in warm cream -->
-  <text x="64" y="96" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="88" font-weight="400" fill="#E8E2D9">S</text>
+  <!-- Serif "R" in warm cream -->
+  <text x="64" y="96" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="88" font-weight="400" fill="#E8E2D9">R</text>
 </svg>

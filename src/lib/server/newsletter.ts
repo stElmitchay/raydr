@@ -68,7 +68,7 @@ export async function generateNewsletter(
 	};
 
 	// Generate the newsletter via Claude
-	const system = `You are writing a monthly newsletter for Sinai, a platform where developers submit and track their software projects. Write an engaging, concise recap of this demo cycle in markdown format.
+	const system = `You are writing a monthly newsletter for Raydr, a platform where developers submit and track their software projects. Write an engaging, concise recap of this demo cycle in markdown format.
 
 Include these sections:
 1. **Highlights** — 2-3 sentence overview of the cycle

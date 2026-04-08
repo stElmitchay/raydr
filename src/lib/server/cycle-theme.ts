@@ -43,7 +43,7 @@ async function generateCycleTheme(
 		? (projects ?? []).map((p: any) => `- ${p.title}: ${p.description}`).join('\n')
 		: 'No projects submitted yet for this cycle.';
 
-	const system = `You are naming monthly demo cycles for Sinai, a developer community platform. Generate a short, evocative theme name (1-3 words) and a one-sentence description for this cycle. The name should feel like a chapter title — aspirational, memorable, and distinct. Think: "Ignition", "First Light", "Deep Roots", "Open Horizon", "Signal Fire".
+	const system = `You are naming monthly demo cycles for Raydr, a developer community platform. Generate a short, evocative theme name (1-3 words) and a one-sentence description for this cycle. The name should feel like a chapter title — aspirational, memorable, and distinct. Think: "Ignition", "First Light", "Deep Roots", "Open Horizon", "Signal Fire".
 
 Return ONLY a JSON object (no markdown code fences):
 {"name": "Theme Name", "description": "One sentence about the theme"}`;

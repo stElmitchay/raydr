@@ -1,11 +1,11 @@
-# Sinai Tracker — Feature Brainstorm & Roadmap
+# Raydr Tracker — Feature Brainstorm & Roadmap
 
 > The ultimate internal AI competition platform. Built with SvelteKit + Supabase + Tailwind.
-> Meta play: winning Sinai by building the tool that tracks Sinai.
+> Meta play: winning Raydr by building the tool that tracks Raydr.
 
 ---
 
-## What is Sinai?
+## What is Raydr?
 
 An internal weekly competition where employees use AI tools to vibe-code internal tools — tools that replace expensive SaaS subscriptions or enhance internal processes, saving the company real money.
 
@@ -19,7 +19,7 @@ An internal weekly competition where employees use AI tools to vibe-code interna
 - Git repo linking — pull in commit stats, lines of code, time to build
 
 ## The Money Shot: Impact Dashboard
-- **Cost calculator** — each project logs what tool/service it replaces and the annual cost. Roll it up into a company-wide "Total Saved by Sinai" counter that ticks up in real time like a stock ticker
+- **Cost calculator** — each project logs what tool/service it replaces and the annual cost. Roll it up into a company-wide "Total Saved by Raydr" counter that ticks up in real time like a stock ticker
 - **Time saved tracker** — estimate hours saved per week per user, multiply across teams
 - **ROI leaderboard** — rank projects by dollars saved, hours saved, adoption rate
 - **Executive summary view** — a single page a CEO can look at and immediately see the program's value. Charts, big numbers, trends over time
@@ -41,18 +41,18 @@ An internal weekly competition where employees use AI tools to vibe-code interna
 - **Sentiment analysis** on feedback/comments
 
 ## Knowledge Base & Reuse
-- **Project catalog** — searchable archive of every Sinai project ever built
-- **Adoption tracker** — after a project wins, track if teams actually adopt it. "Built in Sinai, now used by 3 teams daily"
+- **Project catalog** — searchable archive of every Raydr project ever built
+- **Adoption tracker** — after a project wins, track if teams actually adopt it. "Built in Raydr, now used by 3 teams daily"
 - **Tech stack trends** — what AI tools and frameworks are people gravitating toward
 - **Template library** — winning patterns that others can fork and build on
 - **"Request a Tool"** board — anyone in the company can post "I wish someone would build X" and builders can claim requests
 
 ## Social & Culture
-- **Builder profiles** — portfolio pages showing all your Sinai projects, win rate, total impact
+- **Builder profiles** — portfolio pages showing all your Raydr projects, win rate, total impact
 - **Team pages** — see which departments are shipping the most
 - **Activity feed** — real-time stream of submissions, votes, comments, achievements
 - **Shoutout wall** — give kudos to other builders
-- **Hall of Fame** — all-time greatest Sinai projects prominently displayed
+- **Hall of Fame** — all-time greatest Raydr projects prominently displayed
 - **Rivalry system** — friendly team vs team competition with head-to-head stats
 
 ## Live Event Mode
@@ -64,7 +64,7 @@ An internal weekly competition where employees use AI tools to vibe-code interna
 ## Analytics & Insights
 - **Participation trends** — is engagement growing week over week?
 - **Department breakdown** — which teams participate the most/least
-- **Tool replacement map** — visual graph of what paid tools have been replaced by Sinai projects
+- **Tool replacement map** — visual graph of what paid tools have been replaced by Raydr projects
 - **Cumulative impact over time** — big line going up and to the right
 - **Individual growth tracking** — how builders improve over time
 
@@ -78,8 +78,8 @@ An internal weekly competition where employees use AI tools to vibe-code interna
 
 ## Why This Wins
 
-1. **It's meta** — using Sinai to build the Sinai tracker is the most on-brand move possible
-2. **It sells the program** — the impact dashboard alone justifies the entire Sinai competition to leadership
+1. **It's meta** — using Raydr to build the Raydr tracker is the most on-brand move possible
+2. **It sells the program** — the impact dashboard alone justifies the entire Raydr competition to leadership
 3. **It has legs** — this isn't a one-week novelty, it becomes essential infrastructure
 4. **It showcases AI** — bake AI features into the tool itself to demonstrate what's possible
 5. **It drives participation** — gamification and social features create a flywheel
