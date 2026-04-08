@@ -3,6 +3,22 @@
   <rect width="128" height="128" fill="#0C0B09"/>
   <!-- Thin border -->
   <rect x="2" y="2" width="124" height="124" fill="none" stroke="#2A2621" stroke-width="2"/>
-  <!-- Serif "R" in warm cream -->
-  <text x="64" y="96" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="88" font-weight="400" fill="#E8E2D9">R</text>
+
+  <g fill="none" stroke="#E8E2D9" stroke-width="2.5" stroke-linecap="round">
+    <!-- Globe outline -->
+    <circle cx="64" cy="64" r="38"/>
+
+    <!-- Equator -->
+    <line x1="26" y1="64" x2="102" y2="64"/>
+
+    <!-- Latitude lines (parallels) — ellipses scaled to fit sphere -->
+    <ellipse cx="64" cy="64" rx="38" ry="19"/>
+
+    <!-- Meridian (vertical center) -->
+    <line x1="64" y1="26" x2="64" y2="102"/>
+
+    <!-- Tilted meridians (longitude lines) — ellipses rotated -->
+    <ellipse cx="64" cy="64" rx="19" ry="38"/>
+    <ellipse cx="64" cy="64" rx="30" ry="38"/>
+  </g>
 </svg>
