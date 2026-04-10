@@ -1,20 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { CLAIM_FULFILL_XP_REWARD, SUBMIT_PROJECT_XP } from '$lib/constants';
+import { SUBMIT_PROJECT_XP } from '$lib/constants';
 import { triggerBackgroundAnalysis } from '$lib/server/analyze';
 
-export const load: PageServerLoad = async ({ locals: { session, supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { session } }) => {
 	if (!session) {
 		throw redirect(303, '/auth/login');
 	}
-
-	const { data: claimedRequests } = await supabase
-		.from('tool_requests')
-		.select('id, title, bonus_xp')
-		.eq('claimed_by', session.user.id)
-		.eq('status', 'claimed');
-
-	return { claimedRequests: claimedRequests ?? [] };
+	return {};
 };
 
 export const actions: Actions = {
@@ -44,40 +37,29 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const title = formData.get('title') as string;
-		const description = formData.get('description') as string;
-		const problem_statement = formData.get('problem_statement') as string;
-		const solution_summary = formData.get('solution_summary') as string;
-		const replaces_tool = formData.get('replaces_tool') as string;
-		const annual_cost_replaced = Number(formData.get('annual_cost_replaced')) || 0;
-		const estimated_hours_saved_weekly = Number(formData.get('estimated_hours_saved_weekly')) || 0;
-		const demo_url = formData.get('demo_url') as string;
-		const repo_url = formData.get('repo_url') as string;
-		const video_url = formData.get('video_url') as string;
-		const tech_stack = (formData.get('tech_stack') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
-		const ai_tools_used = (formData.get('ai_tools_used') as string)?.split(',').map(s => s.trim()).filter(Boolean) ?? [];
-		const tool_request_id = (formData.get('tool_request_id') as string) || null;
-		const project_goals = (formData.get('project_goals') as string)?.trim() || '';
-		const target_audience = (formData.get('target_audience') as string)?.trim() || '';
+		const title = (formData.get('title') as string)?.trim();
+		const description = (formData.get('description') as string)?.trim();
+		const demo_url = (formData.get('demo_url') as string)?.trim();
+		const repo_url = (formData.get('repo_url') as string)?.trim();
 
-		if (!title || !description || !problem_statement || !solution_summary) {
-			return fail(400, { error: 'Title, description, problem, and solution are required' });
+		if (!title || !description) {
+			return fail(400, { error: 'Title and description are required' });
 		}
 
-		// Handle screenshot uploads
-		const screenshotFiles = formData.getAll('screenshots') as File[];
-		const validFiles = screenshotFiles.filter(f => f instanceof File && f.size > 0);
-		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+		// Handle media uploads
+		const mediaFiles = formData.getAll('media') as File[];
+		const validFiles = mediaFiles.filter(f => f instanceof File && f.size > 0);
+		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
 		const maxFileSize = 5 * 1024 * 1024; // 5MB
 
 		if (validFiles.length > 5) {
-			return fail(400, { error: 'Maximum 5 screenshots allowed' });
+			return fail(400, { error: 'Maximum 5 files allowed' });
 		}
 
 		const screenshot_urls: string[] = [];
 		for (const file of validFiles) {
 			if (!allowedTypes.includes(file.type)) {
-				return fail(400, { error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, GIF` });
+				return fail(400, { error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, GIF, SVG` });
 			}
 			if (file.size > maxFileSize) {
 				return fail(400, { error: `File too large (max 5MB): ${file.name}` });
@@ -139,26 +121,15 @@ export const actions: Actions = {
 		const { data, error } = await supabase.from('projects').insert({
 			title,
 			description,
-			problem_statement,
-			solution_summary,
-			replaces_tool: replaces_tool || null,
-			annual_cost_replaced,
-			estimated_hours_saved_weekly,
 			demo_url: demo_url || null,
 			repo_url: repo_url || null,
-			tech_stack,
-			ai_tools_used,
 			screenshot_urls,
-			video_url: video_url || null,
-			project_goals,
-			target_audience,
 			submitted_by: session.user.id,
 			season: seasonId,
 			week,
 			demo_cycle: demoCycle,
 			project_type: projectType,
-			status: 'submitted',
-			tool_request_id
+			status: 'submitted'
 		}).select().single();
 
 		if (error) return fail(500, { error: error.message });
@@ -166,24 +137,6 @@ export const actions: Actions = {
 		// Award XP for submitting a project and update streak
 		await supabase.rpc('add_xp', { user_id: session.user.id, amount: SUBMIT_PROJECT_XP });
 		await supabase.rpc('calculate_monthly_streak', { p_user_id: session.user.id });
-
-		// If this project fulfills a claimed request, mark it completed and award XP (base + bounty)
-		if (tool_request_id) {
-			const { data: fulfilledReq } = await supabase
-				.from('tool_requests')
-				.select('bonus_xp')
-				.eq('id', tool_request_id)
-				.single();
-
-			await supabase
-				.from('tool_requests')
-				.update({ status: 'completed' })
-				.eq('id', tool_request_id)
-				.eq('claimed_by', session.user.id);
-
-			const totalReward = CLAIM_FULFILL_XP_REWARD + (fulfilledReq?.bonus_xp ?? 0);
-			await supabase.rpc('add_xp', { user_id: session.user.id, amount: totalReward });
-		}
 
 		// Fire background AI analysis (non-blocking)
 		triggerBackgroundAnalysis(data.id, session.user.id);

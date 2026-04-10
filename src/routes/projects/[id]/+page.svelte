@@ -15,6 +15,9 @@
 	const userId = $derived(data.userId);
 	const isOwner = $derived(userId === project.submitted_by);
 	const isAdmin = $derived(data.isAdmin);
+	const githubConnected = $derived(data.githubConnected);
+
+	let retryingAnalysis = $state(false);
 
 	// GitHub repo info is fetched client-side after mount so it doesn't block the
 	// initial page render. Shows a loading state, then fades in once the API call
@@ -45,6 +48,23 @@
 
 	let implementing = $state<string | null>(null);
 	let showAddMilestone = $state(false);
+	let editingField = $state<string | null>(null);
+	let editValue = $state('');
+	let savingField = $state(false);
+
+	function startEdit(field: string, currentValue: string | number | string[] | null) {
+		editingField = field;
+		if (Array.isArray(currentValue)) {
+			editValue = currentValue.join(', ');
+		} else {
+			editValue = String(currentValue ?? '');
+		}
+	}
+
+	function cancelEdit() {
+		editingField = null;
+		editValue = '';
+	}
 	const hasAdopted = $derived(adoptions.some((a: any) => a.user_id === userId));
 
 	function timeAgo(dateStr: string): string {
@@ -96,7 +116,41 @@
 		</div>
 	</div>
 
-	<p class="text-body max-w-3xl mb-10 sm:mb-12 animate-fade-up stagger-2">{project.description}</p>
+	<div class="max-w-3xl mb-10 sm:mb-12 animate-fade-up stagger-2">
+		{#if editingField === 'description'}
+			<form method="POST" action="?/updateProject" use:enhance={() => {
+				savingField = true;
+				return async ({ update }) => { savingField = false; editingField = null; await update(); };
+			}}>
+				<input type="hidden" name="field" value="description" />
+				<textarea name="value" bind:value={editValue} rows="3" class="input-box w-full text-base mb-3"></textarea>
+				<div class="flex gap-3">
+					<button type="submit" disabled={savingField} class="text-sm text-text link-draw">{savingField ? 'Saving…' : 'Save'}</button>
+					<button type="button" onclick={cancelEdit} class="text-sm text-text-muted link-draw">Cancel</button>
+				</div>
+			</form>
+		{:else}
+			<p class="text-body">{project.description}</p>
+			{#if isOwner}
+				<button onclick={() => startEdit('description', project.description)} class="text-xs text-text-muted link-draw mt-2">Edit</button>
+			{/if}
+		{/if}
+	</div>
+
+	<!-- AI Tools Survey — shown to owner if not yet filled in -->
+	{#if isOwner && (!project.ai_tools_used || project.ai_tools_used.length === 0) && editingField !== 'ai_tools_used'}
+		<div class="border border-border bg-surface-alt px-5 py-4 mb-10 sm:mb-12 animate-fade-up stagger-2">
+			<form method="POST" action="?/updateProject" use:enhance={() => {
+				savingField = true;
+				return async ({ update }) => { savingField = false; await update(); };
+			}} class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+				<input type="hidden" name="field" value="ai_tools_used" />
+				<p class="text-sm text-text-secondary shrink-0">Which AI tools did you use?</p>
+				<input name="value" type="text" placeholder="e.g., Claude, Cursor, Copilot" class="flex-1 bg-transparent border-0 border-b border-border focus:border-text outline-none text-sm text-text py-1 w-full sm:w-auto" />
+				<button type="submit" disabled={savingField} class="text-sm text-text link-draw shrink-0">{savingField ? 'Saving…' : 'Save'}</button>
+			</form>
+		</div>
+	{/if}
 
 	<!-- Analysis Summary (Synthesis) -->
 	{#if synthesis}
@@ -337,13 +391,41 @@
 					<div>
 						<p class="text-base text-text">Analyzing your project...</p>
 						<p class="text-sm text-text-muted mt-1">AI is reviewing your repository and generating milestones. This may take a moment.</p>
+						{#if isOwner}
+							<form method="POST" action="?/retryAnalysis" use:enhance={() => {
+								retryingAnalysis = true;
+								return async ({ update }) => { retryingAnalysis = false; await update(); };
+							}} class="mt-3">
+								<button type="submit" disabled={retryingAnalysis} class="text-sm text-text-secondary link-draw">
+									{retryingAnalysis ? 'Retrying...' : 'Taking too long? Retry Analysis'}
+								</button>
+							</form>
+						{/if}
 					</div>
 				</div>
 			{:else if project.analysis_status === 'failed' && nextSteps.length === 0}
 				<!-- Analysis failed -->
 				<div class="py-8">
 					<p class="text-base text-text">Analysis could not complete</p>
-					<p class="text-sm text-text-muted mt-1">Make sure your GitHub account is connected and the repository is accessible. Milestones will appear after a successful analysis.</p>
+					<p class="text-sm text-text-muted mt-1">
+						{#if !githubConnected}
+							Connect your GitHub account to enable project analysis.
+						{:else}
+							Make sure your repository is accessible and try again.
+						{/if}
+					</p>
+					{#if isOwner && githubConnected}
+						<form method="POST" action="?/retryAnalysis" use:enhance={() => {
+							retryingAnalysis = true;
+							return async ({ update }) => { retryingAnalysis = false; await update(); };
+						}} class="mt-4">
+							<button type="submit" disabled={retryingAnalysis} class="inline-flex items-center px-4 py-2 bg-text text-bg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+								{retryingAnalysis ? 'Analyzing...' : 'Retry Analysis'}
+							</button>
+						</form>
+					{:else if isOwner && !githubConnected}
+						<a href="/profile" class="inline-block mt-4 text-sm text-text-secondary link-draw">Connect GitHub &rarr;</a>
+					{/if}
 				</div>
 			{:else if nextSteps.length === 0}
 				<!-- No milestones yet -->
@@ -455,47 +537,103 @@
 		</div>
 	</ScrollReveal>
 
-	<!-- 4. Project Details (Problem/Solution + Tech) -->
+	<!-- 4. Project Details -->
 	<ScrollReveal>
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-0 mb-10 sm:mb-12 border border-border">
 			<div class="p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8">
-				<div>
-					<h3 class="heading-section mb-3">Problem</h3>
-					<p class="text-body">{project.problem_statement}</p>
-				</div>
-				<div>
-					<h3 class="heading-section mb-3">Solution</h3>
-					<p class="text-body">{project.solution_summary}</p>
-				</div>
-			</div>
-			<div class="p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8 bg-surface-alt border-t md:border-t-0 md:border-l border-border">
+				{#if project.problem_statement}
+					<div>
+						<h3 class="heading-section mb-3">Problem</h3>
+						<p class="text-body">{project.problem_statement}</p>
+					</div>
+				{/if}
+				{#if project.solution_summary}
+					<div>
+						<h3 class="heading-section mb-3">Solution</h3>
+						<p class="text-body">{project.solution_summary}</p>
+					</div>
+				{/if}
+				{#if project.project_goals}
+					<div>
+						<h3 class="heading-section mb-3">Goals</h3>
+						<p class="text-body">{project.project_goals}</p>
+					</div>
+				{/if}
 				{#if project.replaces_tool}
 					<div>
 						<h3 class="heading-section mb-3">Replaces</h3>
 						<p class="text-base text-text">{project.replaces_tool}</p>
 					</div>
 				{/if}
-				<div>
-					<h3 class="heading-section mb-3">Tech Stack</h3>
-					<div class="flex flex-wrap gap-2">
-						{#each project.tech_stack ?? [] as tech}
-							<span class="tag">{tech}</span>
-						{/each}
-						{#if (project.tech_stack ?? []).length === 0}
-							<span class="text-sm text-text-muted">None specified</span>
+				{#if !project.problem_statement && !project.solution_summary && !project.project_goals && !project.replaces_tool}
+					<div>
+						<p class="text-sm text-text-muted">No additional details yet.</p>
+						{#if isOwner}
+							<p class="text-xs text-text-muted mt-2">Use the edit buttons on the right to add project details.</p>
 						{/if}
 					</div>
+				{/if}
+			</div>
+			<div class="p-6 sm:p-8 md:p-10 space-y-6 sm:space-y-8 bg-surface-alt border-t md:border-t-0 md:border-l border-border">
+				<div>
+					<div class="flex items-baseline justify-between mb-3">
+						<h3 class="heading-section">Tech Stack</h3>
+						{#if isOwner}
+							<button onclick={() => startEdit('tech_stack', project.tech_stack)} class="text-xs text-text-muted link-draw">Edit</button>
+						{/if}
+					</div>
+					{#if editingField === 'tech_stack'}
+						<form method="POST" action="?/updateProject" use:enhance={() => {
+							savingField = true;
+							return async ({ update }) => { savingField = false; editingField = null; await update(); };
+						}}>
+							<input type="hidden" name="field" value="tech_stack" />
+							<input name="value" type="text" bind:value={editValue} placeholder="SvelteKit, Python, PostgreSQL" class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-sm text-text py-1 mb-3" />
+							<div class="flex gap-3">
+								<button type="submit" disabled={savingField} class="text-xs text-text link-draw">{savingField ? 'Saving…' : 'Save'}</button>
+								<button type="button" onclick={cancelEdit} class="text-xs text-text-muted link-draw">Cancel</button>
+							</div>
+						</form>
+					{:else}
+						<div class="flex flex-wrap gap-2">
+							{#each project.tech_stack ?? [] as tech}
+								<span class="tag">{tech}</span>
+							{/each}
+							{#if (project.tech_stack ?? []).length === 0}
+								<span class="text-sm text-text-muted">None specified</span>
+							{/if}
+						</div>
+					{/if}
 				</div>
 				<div>
-					<h3 class="heading-section mb-3">AI Tools</h3>
-					<div class="flex flex-wrap gap-2">
-						{#each project.ai_tools_used ?? [] as tool}
-							<span class="tag">{tool}</span>
-						{/each}
-						{#if (project.ai_tools_used ?? []).length === 0}
-							<span class="text-sm text-text-muted">None specified</span>
+					<div class="flex items-baseline justify-between mb-3">
+						<h3 class="heading-section">AI Tools</h3>
+						{#if isOwner}
+							<button onclick={() => startEdit('ai_tools_used', project.ai_tools_used)} class="text-xs text-text-muted link-draw">Edit</button>
 						{/if}
 					</div>
+					{#if editingField === 'ai_tools_used'}
+						<form method="POST" action="?/updateProject" use:enhance={() => {
+							savingField = true;
+							return async ({ update }) => { savingField = false; editingField = null; await update(); };
+						}}>
+							<input type="hidden" name="field" value="ai_tools_used" />
+							<input name="value" type="text" bind:value={editValue} placeholder="Claude, Cursor, Copilot" class="w-full bg-transparent border-0 border-b border-border focus:border-text outline-none text-sm text-text py-1 mb-3" />
+							<div class="flex gap-3">
+								<button type="submit" disabled={savingField} class="text-xs text-text link-draw">{savingField ? 'Saving…' : 'Save'}</button>
+								<button type="button" onclick={cancelEdit} class="text-xs text-text-muted link-draw">Cancel</button>
+							</div>
+						</form>
+					{:else}
+						<div class="flex flex-wrap gap-2">
+							{#each project.ai_tools_used ?? [] as tool}
+								<span class="tag">{tool}</span>
+							{/each}
+							{#if (project.ai_tools_used ?? []).length === 0}
+								<span class="text-sm text-text-muted">None specified</span>
+							{/if}
+						</div>
+					{/if}
 				</div>
 				<div>
 					<h3 class="heading-section mb-3">Period</h3>
@@ -505,11 +643,11 @@
 		</div>
 	</ScrollReveal>
 
-	<!-- Screenshots -->
+	<!-- Media -->
 	{#if project.screenshot_urls?.length > 0}
 		<ScrollReveal>
 			<div class="border-t border-border pt-10 mb-12">
-				<h3 class="heading-section mb-6">Screenshots</h3>
+				<h3 class="heading-section mb-6">Media</h3>
 				<div class="scroll-strip">
 					{#each project.screenshot_urls as url}
 						<button onclick={() => lightboxUrl = url} class="flex-shrink-0 w-[70vw] md:w-[45vw] overflow-hidden border border-border hover:border-border-strong transition-colors">

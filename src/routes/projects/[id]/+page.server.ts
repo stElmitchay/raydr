@@ -3,6 +3,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { parseRepoUrl } from '$lib/server/github';
 import { supabaseAdmin } from '$lib/server/supabase-admin';
 import { implementMilestone } from '$lib/server/ai-implement';
+import { runProjectAnalysis } from '$lib/server/analyze';
 
 const PROJECT_COLUMNS =
 	'id, title, description, problem_statement, solution_summary, project_goals, target_audience, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, demo_url, repo_url, screenshot_urls, video_url, tech_stack, ai_tools_used, team_members, submitted_by, season, week, demo_cycle, status, project_type, adoption_count, analysis_status, created_at, updated_at, submitter:profiles!submitted_by(id, full_name, avatar_url, department, title)';
@@ -55,6 +56,29 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 		throw error(404, 'Project not found');
 	}
 
+	// Staleness auto-recovery: if analysis has been 'analyzing' for over 5 minutes, reset to 'failed'
+	if (project.analysis_status === 'analyzing' && project.updated_at) {
+		const staleMs = Date.now() - new Date(project.updated_at).getTime();
+		if (staleMs > 5 * 60 * 1000) {
+			await supabaseAdmin
+				.from('projects')
+				.update({ analysis_status: 'failed', updated_at: new Date().toISOString() })
+				.eq('id', project.id);
+			(project as any).analysis_status = 'failed';
+		}
+	}
+
+	// Check if user has GitHub connected (for showing retry button)
+	let githubConnected = false;
+	if (session?.user?.id) {
+		const { data: ghConn } = await supabase
+			.from('github_connections')
+			.select('id')
+			.eq('user_id', session.user.id)
+			.maybeSingle();
+		githubConnected = !!ghConn;
+	}
+
 	// Team members — only fetch if needed (after we know the project exists)
 	const teamMembers =
 		(project as any).team_members?.length > 0
@@ -80,7 +104,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 		repoInfo: null,
 		contributors: null,
 		userId: session?.user?.id ?? null,
-		isAdmin
+		isAdmin,
+		githubConnected
 	};
 };
 
@@ -214,6 +239,76 @@ export const actions: Actions = {
 		});
 
 		return { success: true };
+	},
+
+	retryAnalysis: async ({ params, locals: { supabase, session } }) => {
+		if (!session) return fail(401, { error: 'Not authenticated' });
+
+		const { data: project } = await supabase
+			.from('projects')
+			.select('submitted_by, repo_url, analysis_status')
+			.eq('id', params.id)
+			.single();
+
+		if (!project) return fail(404, { error: 'Project not found' });
+		if (!project.repo_url) return fail(400, { error: 'No repository URL' });
+		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
+
+		try {
+			await runProjectAnalysis(params.id, session.user.id);
+		} catch {
+			return fail(500, { error: 'Analysis failed. Please check your GitHub connection and try again.' });
+		}
+
+		return { success: true };
+	},
+
+	updateProject: async ({ request, params, locals: { supabase, session } }) => {
+		if (!session) return fail(401, { error: 'Not authenticated' });
+
+		// Verify ownership
+		const { data: project } = await supabase
+			.from('projects')
+			.select('submitted_by')
+			.eq('id', params.id)
+			.single();
+
+		if (!project) return fail(404, { error: 'Project not found' });
+		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
+
+		const formData = await request.formData();
+		const field = formData.get('field') as string;
+		const value = (formData.get('value') as string)?.trim() ?? '';
+
+		// Whitelist of editable fields
+		const textFields = ['description', 'demo_url', 'repo_url', 'replaces_tool', 'project_goals', 'target_audience'];
+		const numberFields = ['annual_cost_replaced', 'estimated_hours_saved_weekly'];
+		const arrayFields = ['tech_stack', 'ai_tools_used'];
+
+		if (textFields.includes(field)) {
+			const { error: err } = await supabaseAdmin
+				.from('projects')
+				.update({ [field]: value || null })
+				.eq('id', params.id);
+			if (err) return fail(500, { error: err.message });
+		} else if (numberFields.includes(field)) {
+			const { error: err } = await supabaseAdmin
+				.from('projects')
+				.update({ [field]: Number(value) || 0 })
+				.eq('id', params.id);
+			if (err) return fail(500, { error: err.message });
+		} else if (arrayFields.includes(field)) {
+			const arr = value.split(',').map(s => s.trim()).filter(Boolean);
+			const { error: err } = await supabaseAdmin
+				.from('projects')
+				.update({ [field]: arr })
+				.eq('id', params.id);
+			if (err) return fail(500, { error: err.message });
+		} else {
+			return fail(400, { error: 'Invalid field' });
+		}
+
+		return { success: true, updatedField: field };
 	},
 
 	implement: async ({ request, params, locals: { supabase, session } }) => {
