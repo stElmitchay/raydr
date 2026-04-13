@@ -50,6 +50,7 @@ export const actions: Actions = {
 		const mediaFiles = formData.getAll('media') as File[];
 		const validFiles = mediaFiles.filter(f => f instanceof File && f.size > 0);
 		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+		const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
 		const maxFileSize = 5 * 1024 * 1024; // 5MB
 
 		if (validFiles.length > 5) {
@@ -58,7 +59,8 @@ export const actions: Actions = {
 
 		const screenshot_urls: string[] = [];
 		for (const file of validFiles) {
-			if (!allowedTypes.includes(file.type)) {
+			const fileExt = '.' + (file.name.split('.').pop() || '').toLowerCase();
+			if (!allowedTypes.includes(file.type) && !allowedExts.includes(fileExt)) {
 				return fail(400, { error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WebP, GIF, SVG` });
 			}
 			if (file.size > maxFileSize) {

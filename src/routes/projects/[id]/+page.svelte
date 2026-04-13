@@ -810,8 +810,9 @@
 				<h3 class="heading-section mb-6">Media</h3>
 				<div class="scroll-strip">
 					{#each project.screenshot_urls as url}
-						<button onclick={() => lightboxUrl = url} class="flex-shrink-0 w-[70vw] md:w-[45vw] overflow-hidden border border-border hover:border-border-strong transition-colors">
-							<img src={url} alt="Screenshot" class="w-full h-56 md:h-64 object-cover" />
+						{@const isSvg = url.toLowerCase().endsWith('.svg')}
+						<button onclick={() => lightboxUrl = url} class="flex-shrink-0 w-[70vw] md:w-[45vw] overflow-hidden border border-border hover:border-border-strong transition-colors {isSvg ? 'bg-white/5' : ''}">
+							<img src={url} alt="Screenshot" class="w-full h-56 md:h-64 {isSvg ? 'object-contain p-4' : 'object-cover'}" />
 						</button>
 					{/each}
 				</div>

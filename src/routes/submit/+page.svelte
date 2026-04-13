@@ -140,7 +140,7 @@
 		type="file"
 		name="media"
 		multiple
-		accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+		accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.jpg,.jpeg,.png,.webp,.gif,.svg"
 		onchange={handleFileChange}
 		class="sr-only"
 	/>

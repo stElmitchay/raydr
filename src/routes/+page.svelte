@@ -125,11 +125,12 @@
 				{#each data.featuredProjects as project}
 					<a href="/projects/{project.id}" class="block w-[70vw] md:w-[45vw] lg:w-[35vw] group">
 						{#if project.screenshot_urls?.[0]}
+							{@const isSvg = project.screenshot_urls[0].toLowerCase().endsWith('.svg')}
 							<div class="w-full aspect-[16/9] bg-surface-alt overflow-hidden mb-4">
 								<img
 									src={project.screenshot_urls[0]}
 									alt={project.title}
-									class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+									class="w-full h-full transition-transform duration-500 group-hover:scale-105 {isSvg ? 'object-contain p-4' : 'object-cover'}"
 								/>
 							</div>
 						{:else}
