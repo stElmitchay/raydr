@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
 
 	let { data } = $props();
@@ -13,7 +13,8 @@
 	const ideaEvaluation = $derived(data.ideaEvaluation);
 	const synthesis = $derived(data.synthesis);
 	const userId = $derived(data.userId);
-	const isOwner = $derived(userId === project.submitted_by);
+	const canManage = $derived(data.canManage);
+	const canEdit = $derived(data.canEdit);
 	const isAdmin = $derived(data.isAdmin);
 	const githubConnected = $derived(data.githubConnected);
 
@@ -84,6 +85,26 @@
 	let submittingComment = $state(false);
 	let lightboxUrl = $state<string | null>(null);
 
+	// Owners see their own analysis expanded; visitors get a condensed preview.
+	// Initial value only — the user's toggle should win after first render.
+	let ideaEvalExpanded = $state(untrack(() => data.canManage));
+	let dpgExpanded = $state(untrack(() => data.canManage));
+
+	const scoreEntries = $derived(ideaEvaluation ? Object.entries(ideaEvaluation.scores) : []);
+	const visibleScores = $derived(ideaEvalExpanded ? scoreEntries : scoreEntries.slice(0, 3));
+	const hiddenScoreCount = $derived(Math.max(0, scoreEntries.length - 3));
+
+	const visibleChecklist = $derived(
+		dpgEvaluation
+			? dpgExpanded
+				? dpgEvaluation.checklist
+				: dpgEvaluation.checklist.slice(0, 3)
+			: []
+	);
+	const hiddenChecklistCount = $derived(
+		dpgEvaluation ? Math.max(0, dpgEvaluation.checklist.length - 3) : 0
+	);
+
 	function getEmbedUrl(url: string): string | null {
 		let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
 		if (match) return `https://www.youtube-nocookie.com/embed/${match[1]}`;
@@ -132,14 +153,14 @@
 			</form>
 		{:else}
 			<p class="text-body">{project.description}</p>
-			{#if isOwner}
+			{#if canEdit}
 				<button onclick={() => startEdit('description', project.description)} class="text-xs text-text-muted link-draw mt-2">Edit</button>
 			{/if}
 		{/if}
 	</div>
 
 	<!-- AI Tools Survey — shown to owner if not yet filled in -->
-	{#if isOwner && (!project.ai_tools_used || project.ai_tools_used.length === 0) && editingField !== 'ai_tools_used'}
+	{#if canEdit && (!project.ai_tools_used || project.ai_tools_used.length === 0) && editingField !== 'ai_tools_used'}
 		<div class="border border-border bg-surface-alt px-5 py-4 mb-10 sm:mb-12 animate-fade-up stagger-2">
 			<form method="POST" action="?/updateProject" use:enhance={() => {
 				savingField = true;
@@ -223,7 +244,7 @@
 
 				<!-- Score breakdown -->
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-					{#each Object.entries(ideaEvaluation.scores) as [key, score] (key)}
+					{#each visibleScores as [key, score] (key)}
 						{@const numScore = score as number}
 						<div class="border border-border p-4">
 							<div class="flex items-baseline justify-between mb-2">
@@ -237,48 +258,61 @@
 					{/each}
 				</div>
 
-				<!-- Strengths / Concerns / Recommendations -->
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-					{#if ideaEvaluation.strengths?.length}
-						<div>
-							<h4 class="heading-section mb-3 text-positive">Strengths</h4>
-							<ul class="space-y-2">
-								{#each ideaEvaluation.strengths as item}
-									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
-										<span class="text-positive shrink-0">+</span>
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
+				{#if ideaEvalExpanded}
+					<!-- Strengths / Concerns / Recommendations -->
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+						{#if ideaEvaluation.strengths?.length}
+							<div>
+								<h4 class="heading-section mb-3 text-positive">Strengths</h4>
+								<ul class="space-y-2">
+									{#each ideaEvaluation.strengths as item}
+										<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+											<span class="text-positive shrink-0">+</span>
+											<span>{item}</span>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if ideaEvaluation.concerns?.length}
+							<div>
+								<h4 class="heading-section mb-3 text-negative">Concerns</h4>
+								<ul class="space-y-2">
+									{#each ideaEvaluation.concerns as item}
+										<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+											<span class="text-negative shrink-0">−</span>
+											<span>{item}</span>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if ideaEvaluation.recommendations?.length}
+							<div>
+								<h4 class="heading-section mb-3">Recommendations</h4>
+								<ul class="space-y-2">
+									{#each ideaEvaluation.recommendations as item}
+										<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
+											<span class="text-text-muted shrink-0">→</span>
+											<span>{item}</span>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<button
+					onclick={() => (ideaEvalExpanded = !ideaEvalExpanded)}
+					class="text-sm text-text-secondary link-draw mt-6"
+				>
+					{#if ideaEvalExpanded}
+						See less
+					{:else}
+						See more{#if hiddenScoreCount > 0} ({hiddenScoreCount} more scores + analysis){/if}
 					{/if}
-					{#if ideaEvaluation.concerns?.length}
-						<div>
-							<h4 class="heading-section mb-3 text-negative">Concerns</h4>
-							<ul class="space-y-2">
-								{#each ideaEvaluation.concerns as item}
-									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
-										<span class="text-negative shrink-0">−</span>
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-					{#if ideaEvaluation.recommendations?.length}
-						<div>
-							<h4 class="heading-section mb-3">Recommendations</h4>
-							<ul class="space-y-2">
-								{#each ideaEvaluation.recommendations as item}
-									<li class="text-sm text-text-secondary leading-relaxed flex gap-2">
-										<span class="text-text-muted shrink-0">→</span>
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
+				</button>
 			</div>
 		</ScrollReveal>
 	{/if}
@@ -301,7 +335,7 @@
 
 				<!-- Criteria grid -->
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-					{#each dpgEvaluation.checklist as item}
+					{#each visibleChecklist as item}
 						<div class="border border-border p-4">
 							<div class="flex items-start gap-2.5 mb-2">
 								<span class="shrink-0 mt-0.5 text-sm {item.status === 'pass' ? 'text-positive' : 'text-negative'}">
@@ -316,8 +350,8 @@
 					{/each}
 				</div>
 
-				<!-- Priority actions -->
-				{#if dpgEvaluation.priority_actions?.length}
+				{#if dpgExpanded && dpgEvaluation.priority_actions?.length}
+					<!-- Priority actions -->
 					<div class="mt-6 pt-6 border-t border-border">
 						<h4 class="heading-section mb-4">Priority Actions</h4>
 						<ul class="space-y-2.5">
@@ -332,6 +366,26 @@
 						</ul>
 					</div>
 				{/if}
+
+				<button
+					onclick={() => (dpgExpanded = !dpgExpanded)}
+					class="text-sm text-text-secondary link-draw mt-6"
+				>
+					{#if dpgExpanded}
+						See less
+					{:else}
+						See more{#if hiddenChecklistCount > 0} ({hiddenChecklistCount} more criteria + actions){/if}
+					{/if}
+				</button>
+			</div>
+		</ScrollReveal>
+	{:else if canManage}
+		<ScrollReveal>
+			<div class="border-t border-border pt-10 mb-12">
+				<h3 class="heading-section mb-4">DPG Compliance</h3>
+				<p class="text-sm text-text-muted leading-relaxed max-w-2xl">
+					Not yet evaluated. Run the <code class="text-text">dpg-evaluator</code> skill against this project to generate a Digital Public Goods assessment based on the actual code.
+				</p>
 			</div>
 		</ScrollReveal>
 	{/if}
@@ -445,7 +499,8 @@
 		</ScrollReveal>
 	{/if}
 
-	<!-- 3. Milestones (Always visible) -->
+	<!-- 3. Milestones (owner-only: submitter, team member, or admin) -->
+	{#if canManage}
 	<ScrollReveal>
 		<div class="border-t border-border pt-10 mb-12">
 			<div class="flex items-baseline justify-between mb-6">
@@ -455,7 +510,7 @@
 						<span class="text-text-muted normal-case text-xs tracking-normal ml-3 font-normal">({fulfilledSteps.length}/{nextSteps.length} completed)</span>
 					{/if}
 				</h3>
-				{#if isOwner && githubConnected && project.repo_url && project.analysis_status !== 'analyzing'}
+				{#if githubConnected && project.repo_url && project.analysis_status !== 'analyzing'}
 					<form method="POST" action="?/retryAnalysis" use:enhance={() => {
 						retryingAnalysis = true;
 						return async ({ update }) => { retryingAnalysis = false; await update(); };
@@ -474,16 +529,14 @@
 					<div>
 						<p class="text-base text-text">Analyzing your project...</p>
 						<p class="text-sm text-text-muted mt-1">AI is reviewing your repository and generating milestones. This may take a moment.</p>
-						{#if isOwner}
-							<form method="POST" action="?/retryAnalysis" use:enhance={() => {
-								retryingAnalysis = true;
-								return async ({ update }) => { retryingAnalysis = false; await update(); };
-							}} class="mt-3">
-								<button type="submit" disabled={retryingAnalysis} class="text-sm text-text-secondary link-draw">
-									{retryingAnalysis ? 'Retrying...' : 'Taking too long? Retry Analysis'}
-								</button>
-							</form>
-						{/if}
+						<form method="POST" action="?/retryAnalysis" use:enhance={() => {
+							retryingAnalysis = true;
+							return async ({ update }) => { retryingAnalysis = false; await update(); };
+						}} class="mt-3">
+							<button type="submit" disabled={retryingAnalysis} class="text-sm text-text-secondary link-draw">
+								{retryingAnalysis ? 'Retrying...' : 'Taking too long? Retry Analysis'}
+							</button>
+						</form>
 					</div>
 				</div>
 			{:else if project.analysis_status === 'failed' && nextSteps.length === 0}
@@ -497,7 +550,7 @@
 							Make sure your repository is accessible and try again.
 						{/if}
 					</p>
-					{#if isOwner && githubConnected}
+					{#if githubConnected}
 						<form method="POST" action="?/retryAnalysis" use:enhance={() => {
 							retryingAnalysis = true;
 							return async ({ update }) => { retryingAnalysis = false; await update(); };
@@ -506,7 +559,7 @@
 								{retryingAnalysis ? 'Analyzing...' : 'Retry Analysis'}
 							</button>
 						</form>
-					{:else if isOwner && !githubConnected}
+					{:else}
 						<a href="/profile" class="inline-block mt-4 text-sm text-text-secondary link-draw">Connect GitHub &rarr;</a>
 					{/if}
 				</div>
@@ -556,7 +609,7 @@
 								<span class="h-1.5 w-1.5 rounded-full bg-text-muted animate-pulse"></span>
 								Planning
 							</span>
-						{:else if isOwner && project.repo_url && !step.implementation_plan}
+						{:else if project.repo_url && !step.implementation_plan}
 							<form method="POST" action="?/planImplementation" use:enhance={() => {
 								planning = step.id;
 								return async ({ update }) => { planning = null; await update(); };
@@ -696,6 +749,7 @@
 			{/if}
 		</div>
 	</ScrollReveal>
+	{/if}
 
 	<!-- 4. Project Details -->
 	<ScrollReveal>
@@ -728,7 +782,7 @@
 				{#if !project.problem_statement && !project.solution_summary && !project.project_goals && !project.replaces_tool}
 					<div>
 						<p class="text-sm text-text-muted">No additional details yet.</p>
-						{#if isOwner}
+						{#if canEdit}
 							<p class="text-xs text-text-muted mt-2">Use the edit buttons on the right to add project details.</p>
 						{/if}
 					</div>
@@ -738,7 +792,7 @@
 				<div>
 					<div class="flex items-baseline justify-between mb-3">
 						<h3 class="heading-section">Tech Stack</h3>
-						{#if isOwner}
+						{#if canEdit}
 							<button onclick={() => startEdit('tech_stack', project.tech_stack)} class="text-xs text-text-muted link-draw">Edit</button>
 						{/if}
 					</div>
@@ -768,7 +822,7 @@
 				<div>
 					<div class="flex items-baseline justify-between mb-3">
 						<h3 class="heading-section">AI Tools</h3>
-						{#if isOwner}
+						{#if canEdit}
 							<button onclick={() => startEdit('ai_tools_used', project.ai_tools_used)} class="text-xs text-text-muted link-draw">Edit</button>
 						{/if}
 					</div>

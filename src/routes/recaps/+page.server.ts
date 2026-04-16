@@ -13,10 +13,13 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 	const { data: projects } = await supabase
 		.from('projects')
-		.select('*, submitter:profiles!submitted_by(*)')
+		.select(
+			'id, title, demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, submitter:profiles!submitted_by(id, full_name, department)'
+		)
 		.eq('season', activeSeason.id)
 		.in('status', ['submitted', 'featured'])
-		.order('annual_cost_replaced', { ascending: false });
+		.order('annual_cost_replaced', { ascending: false })
+		.limit(500);
 
 	// Aggregate by demo cycle (fall back to week for legacy data)
 	const cycleMap = new Map<number, {
@@ -27,7 +30,8 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		winner: { title: string; submitterName: string; costSaved: number } | null;
 	}>();
 
-	for (const p of projects ?? []) {
+	for (const raw of projects ?? []) {
+		const p = raw as any;
 		const c = p.demo_cycle ?? p.week ?? 1;
 		const existing = cycleMap.get(c) ?? { cycle: c, count: 0, costSaved: 0, hoursSaved: 0, winner: null };
 		existing.count++;

@@ -7,6 +7,7 @@
 	const milestones = $derived(data.milestones);
 	const nextSteps = $derived(data.nextSteps);
 	const githubConnected = $derived(data.githubConnected);
+	const dpgEvaluation = $derived(data.dpgEvaluation);
 
 	let analyzing = $state(false);
 
@@ -134,18 +135,17 @@
 		{/if}
 
 		<!-- DPG Compliance -->
-		{#if latestAnalysis?.dpg_evaluation}
-			{@const dpg = latestAnalysis.dpg_evaluation as any}
+		{#if dpgEvaluation}
 			<div class="glass-card p-6 space-y-4">
 				<div class="flex items-center justify-between">
 					<h3 class="text-sm font-display font-semibold text-text">DPG Compliance</h3>
-					<span class="text-2xl font-bold font-mono {(dpg.passing_count ?? 0) >= 7 ? 'text-success' : (dpg.passing_count ?? 0) >= 4 ? 'text-accent-light' : 'text-text-muted'}">
-						{dpg.passing_count ?? 0}<span class="text-sm text-text-muted">/9</span>
+					<span class="text-2xl font-bold font-mono {dpgEvaluation.passing_count >= 7 ? 'text-success' : dpgEvaluation.passing_count >= 4 ? 'text-accent-light' : 'text-text-muted'}">
+						{dpgEvaluation.passing_count}<span class="text-sm text-text-muted">/9</span>
 					</span>
 				</div>
-				{#if dpg.checklist?.length > 0}
+				{#if dpgEvaluation.checklist?.length > 0}
 					<div class="space-y-2">
-						{#each dpg.checklist as item}
+						{#each dpgEvaluation.checklist as item}
 							<div class="flex items-start gap-3 py-2 border-b border-white/[0.06] last:border-0">
 								<span class="shrink-0 mt-0.5 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold
 									{item.status === 'pass' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}">
@@ -153,13 +153,18 @@
 								</span>
 								<div class="flex-1 min-w-0">
 									<p class="text-sm text-text">{item.criterion}</p>
-									<p class="text-xs text-text-muted mt-0.5">{item.evidence || item.recommendation || item.reasoning}</p>
+									<p class="text-xs text-text-muted mt-0.5">{item.evidence || item.recommendation}</p>
 								</div>
 								<span class="text-xs text-text-muted shrink-0">#{item.indicator}</span>
 							</div>
 						{/each}
 					</div>
 				{/if}
+			</div>
+		{:else}
+			<div class="glass-card p-6">
+				<h3 class="text-sm font-display font-semibold text-text mb-2">DPG Compliance</h3>
+				<p class="text-sm text-text-muted">Not yet evaluated. An admin can run the dpg-evaluator skill against this project to generate a DPG assessment.</p>
 			</div>
 		{/if}
 

@@ -437,18 +437,23 @@ export async function getSampleFiles(
 		.filter(f => f.score > 0)
 		.sort((a, b) => b.score - a.score);
 
+	// Fetch up to maxFiles*2 in parallel (one round-trip per file otherwise),
+	// then pick the top maxFiles that also fit the size budget.
+	const candidates = scored.slice(0, maxFiles * 2);
+	const fetched = await Promise.all(
+		candidates.map(async (file) => {
+			const content = await getFileContent(token, owner, repo, file.path);
+			return content ? { path: file.path, content: content.slice(0, 10_000), score: file.score } : null;
+		})
+	);
+
 	const results: Array<{ path: string; content: string }> = [];
 	let totalSize = 0;
-
-	for (const file of scored.slice(0, maxFiles * 2)) {
-		if (results.length >= maxFiles || totalSize >= maxTotalSize) break;
-
-		const content = await getFileContent(token, owner, repo, file.path);
-		if (content) {
-			const truncated = content.slice(0, 10_000);
-			results.push({ path: file.path, content: truncated });
-			totalSize += truncated.length;
-		}
+	for (const entry of fetched) {
+		if (!entry) continue;
+		if (results.length >= maxFiles || totalSize + entry.content.length > maxTotalSize) continue;
+		results.push({ path: entry.path, content: entry.content });
+		totalSize += entry.content.length;
 	}
 
 	return results;

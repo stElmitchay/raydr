@@ -1,5 +1,8 @@
 import type { PageServerLoad } from './$types';
 
+const PROJECT_LIST_COLUMNS =
+	'id, title, description, status, demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used, screenshot_urls, created_at, project_type, adoption_count, submitter:profiles!submitted_by(id, full_name, department, avatar_url)';
+
 export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 	const status = url.searchParams.get('status') || 'all';
 	const sort = url.searchParams.get('sort') || 'newest';
@@ -8,7 +11,7 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 
 	let query = supabase
 		.from('projects')
-		.select('*, submitter:profiles!submitted_by(*)');
+		.select(PROJECT_LIST_COLUMNS);
 
 	if (status !== 'all') {
 		query = query.eq('status', status);
@@ -36,7 +39,7 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 			query = query.order('created_at', { ascending: false });
 	}
 
-	const { data: projects } = await query;
+	const { data: projects } = await query.limit(100);
 
-	return { projects: projects ?? [] };
+	return { projects: (projects ?? []) as any[] };
 };

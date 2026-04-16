@@ -4,17 +4,21 @@ import { parseRepoUrl, getRepoInfo, getReadmeContent, createBranch, createOrUpda
 import { generateReadme } from '$lib/server/claude';
 import { SUBMIT_PROJECT_XP } from '$lib/constants';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, session } }) => {
+export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	const { session } = await safeGetSession();
 	if (!session) throw redirect(303, '/auth/login');
 
-	const { data: project } = await supabase
-		.from('projects')
-		.select('*')
-		.eq('id', params.id)
-		.single();
+	const [{ data: project }, { data: profile }] = await Promise.all([
+		supabase.from('projects').select('*').eq('id', params.id).single(),
+		supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+	]);
 
 	if (!project) throw error(404, 'Project not found');
-	if (project.submitted_by !== session.user.id) throw error(403, 'Only the project owner can generate a README');
+	const canManage =
+		project.submitted_by === session.user.id ||
+		(project.team_members ?? []).includes(session.user.id) ||
+		!!profile?.is_admin;
+	if (!canManage) throw error(403, 'Only the project owner can generate a README');
 
 	const { data: ghConn } = await supabase
 		.from('github_connections')
@@ -29,16 +33,21 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 };
 
 export const actions: Actions = {
-	generate: async ({ params, locals: { supabase, session } }) => {
+	generate: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		const { data: project } = await supabase
-			.from('projects')
-			.select('*')
-			.eq('id', params.id)
-			.single();
+		const [{ data: project }, { data: profile }] = await Promise.all([
+			supabase.from('projects').select('*').eq('id', params.id).single(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!project) return fail(404, { error: 'Project not found' });
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 		if (!project.repo_url) return fail(400, { error: 'No repository URL' });
 
 		const { data: ghConn } = await supabase
@@ -75,7 +84,8 @@ export const actions: Actions = {
 		}
 	},
 
-	pushPr: async ({ params, request, locals: { supabase, session } }) => {
+	pushPr: async ({ params, request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -83,13 +93,17 @@ export const actions: Actions = {
 
 		if (!readmeContent?.trim()) return fail(400, { error: 'README content is empty' });
 
-		const { data: project } = await supabase
-			.from('projects')
-			.select('*')
-			.eq('id', params.id)
-			.single();
+		const [{ data: project }, { data: profile }] = await Promise.all([
+			supabase.from('projects').select('*').eq('id', params.id).single(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!project?.repo_url) return fail(400, { error: 'No repository URL' });
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 
 		const { data: ghConn } = await supabase
 			.from('github_connections')

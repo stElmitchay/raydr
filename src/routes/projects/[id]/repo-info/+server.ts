@@ -2,7 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { parseRepoUrl, getRepoInfo, getContributors } from '$lib/server/github';
 
-export const GET: RequestHandler = async ({ params, locals: { supabase, session } }) => {
+export const GET: RequestHandler = async ({ params, locals: { supabase } }) => {
+	// Cookie-only — this endpoint just needs to know which user is asking so it
+	// can pick the right GitHub token. The result is per-user but not security-
+	// sensitive on its own (the token comes from a separate skinny lookup).
+	const { data: { session } } = await supabase.auth.getSession();
 	if (!session?.user?.id) {
 		return json({ repoInfo: null, contributors: null });
 	}

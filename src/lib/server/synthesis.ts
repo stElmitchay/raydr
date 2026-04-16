@@ -50,6 +50,10 @@ YOU ARE THE SOLE SOURCE OF NEXT STEPS. Your priority_milestones are the ONLY new
 2. REVIEW existing unfulfilled steps — are they still relevant given the new progress? If a step is now irrelevant (already done differently, or superseded), mention it in your summary so we know.
 3. GENERATE 3-5 NEW priority milestones that address the highest-impact gaps across all evaluations. Only generate steps that are genuinely NEW — don't duplicate existing unfulfilled steps.
 
+## Critical: never write DPG counts in prose
+
+The numeric DPG score (e.g., "7/9") is rendered separately in the UI from the deterministic dpg-evaluator output. NEVER include phrases like "passes 7/9", "9/9 criteria", "all 9 indicators", or any other number-of-criteria reference in your "summary", "strengths", or "critical_gaps" fields. Refer to DPG findings qualitatively only — name the specific criteria that pass or fail (e.g., "lacks an open-source license", "documentation is strong"). The badge handles the count; you handle the narrative.
+
 ## Rules for generating next steps
 
 Each milestone must be:

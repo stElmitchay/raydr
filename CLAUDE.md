@@ -40,10 +40,10 @@ Tokens are stored in `github_connections` table. Service-role Supabase client (`
 
 - **Profile** — user with XP, level, streak, department, role (internal/community), GitHub connection
 - **Project** — submitted project with optional cost/hours metrics, tied to season + demo_cycle, tagged as internal/community
-- **AIAnalysis** — AI-generated analysis of repo progress per demo cycle, includes DPG evaluation
+- **AIAnalysis** — AI-generated analysis of repo progress per demo cycle (idea evaluation + synthesis)
 - **Milestone** — individual achievement detected by AI (feature, bugfix, docs, etc.)
 - **NextStep** — AI-recommended goals for upcoming demo cycles
-- **DPGEvaluation** — Digital Public Goods compliance assessment (9 indicators)
+- **DpgEvaluatorStatus** — Digital Public Goods compliance assessment (9 indicators), produced by the [`christex-foundation/dpg-evaluator`](https://github.com/christex-foundation/dpg-evaluator) Claude Code Skill and stored on `projects.dpgStatus`. Raydr only reads it; the skill is run out-of-band.
 - **Newsletter** — auto-generated recap of a demo cycle
 - **GitHubConnection** — OAuth tokens for GitHub API access
 - **ToolRequest** — bounty board: users request tools, others claim and fulfill for bonus XP
@@ -53,9 +53,9 @@ Tokens are stored in `github_connections` table. Service-role Supabase client (`
 ### AI Features (src/lib/server/)
 
 - `claude.ts` — `callClaude()` (exported), `analyzeRepoProgress()` (returns milestones + next steps), `generateReadme()`
-- `dpg.ts` — `evaluateDPGCompliance()` evaluates repos against 9 DPG Standard indicators
+- `dpg-status.ts` — `adaptDpgStatus()` shapes the `dpg-evaluator` skill's output for the UI. Raydr does NOT run its own DPG prompt; the Python skill writes to `projects.dpgStatus` out-of-band and the web app just reads it.
 - `newsletter.ts` — `generateNewsletter()` auto-generates demo cycle recaps via Claude
-- AI analysis route: `src/routes/projects/[id]/analyze/` — runs progress analysis + DPG evaluation + next steps
+- AI analysis route: `src/routes/projects/[id]/analyze/` — runs progress analysis + idea evaluation + synthesis (DPG analysis is the skill's responsibility, not this route)
 - README generation route: `src/routes/projects/[id]/generate-readme/` (includes PR push to GitHub)
 
 ### GitHub Integration (src/lib/server/github.ts)

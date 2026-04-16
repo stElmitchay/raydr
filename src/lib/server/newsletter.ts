@@ -29,7 +29,7 @@ export async function generateNewsletter(
 			.limit(20),
 		supabase
 			.from('ai_analyses')
-			.select('xp_awarded, dpg_evaluation')
+			.select('xp_awarded, project_id')
 			.eq('demo_cycle', demoCycle),
 		supabase
 			.from('profiles')
@@ -42,12 +42,27 @@ export async function generateNewsletter(
 	const projectList = projects ?? [];
 	const milestoneList = milestones ?? [];
 	const totalXp = (analyses ?? []).reduce((sum: number, a: any) => sum + (a.xp_awarded || 0), 0);
-	const dpgPassingCounts = (analyses ?? [])
-		.filter((a: any) => a.dpg_evaluation)
-		.map((a: any) => a.dpg_evaluation.passing_count ?? 0);
-	const avgDpg = dpgPassingCounts.length > 0
-		? Math.round(dpgPassingCounts.reduce((s: number, v: number) => s + v, 0) / dpgPassingCounts.length)
-		: null;
+
+	// DPG averages come from the dpg-evaluator skill output on each project
+	// in this cycle. The skill writes projects.dpgStatus; absent means a
+	// project hasn't been evaluated yet and is excluded from the average.
+	const projectIdsInCycle = (analyses ?? [])
+		.map((a: any) => a.project_id)
+		.filter(Boolean);
+	let avgDpg: number | null = null;
+	if (projectIdsInCycle.length > 0) {
+		const { data: dpgRows } = await supabase
+			.from('projects')
+			.select('"dpgStatus"')
+			.in('id', projectIdsInCycle);
+		const counts = (dpgRows ?? [])
+			.map((r: any) => r.dpgStatus?.status)
+			.filter((s: any) => Array.isArray(s) && s.length > 0)
+			.map((s: any) => s.filter((c: any) => c.overallScore === 1).length);
+		if (counts.length > 0) {
+			avgDpg = Math.round(counts.reduce((sum: number, n: number) => sum + n, 0) / counts.length);
+		}
+	}
 
 	const statsData = {
 		projectCount: projectList.length,

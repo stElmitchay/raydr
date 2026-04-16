@@ -36,6 +36,10 @@ export interface AnalysisResult {
 }
 
 export async function callClaude(system: string, userMessage: string): Promise<string> {
+	// Mark the system prompt for ephemeral prompt caching. System prompts here
+	// (analysis, DPG eval, idea eval, synthesis, readme, cycle-theme) are all
+	// well over the 1024-token caching threshold and are reused across every
+	// analysis, so we get ~90% input-token savings on repeat runs within 5 min.
 	const res = await fetch('https://api.anthropic.com/v1/messages', {
 		method: 'POST',
 		headers: {
@@ -46,7 +50,13 @@ export async function callClaude(system: string, userMessage: string): Promise<s
 		body: JSON.stringify({
 			model: 'claude-sonnet-4-20250514',
 			max_tokens: 4096,
-			system,
+			system: [
+				{
+					type: 'text',
+					text: system,
+					cache_control: { type: 'ephemeral' }
+				}
+			],
 			messages: [{ role: 'user', content: userMessage }]
 		})
 	});

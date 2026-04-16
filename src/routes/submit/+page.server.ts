@@ -3,7 +3,10 @@ import type { Actions, PageServerLoad } from './$types';
 import { SUBMIT_PROJECT_XP } from '$lib/constants';
 import { triggerBackgroundAnalysis } from '$lib/server/analyze';
 
-export const load: PageServerLoad = async ({ locals: { session } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+	// Cookie-only check — sufficient for a redirect gate. The form action below
+	// re-validates with safeGetSession() before doing any writes.
+	const { data: { session } } = await supabase.auth.getSession();
 	if (!session) {
 		throw redirect(303, '/auth/login');
 	}
@@ -11,15 +14,23 @@ export const load: PageServerLoad = async ({ locals: { session } }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals: { supabase, session } }) => {
+	default: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		// Ensure profile exists before inserting project (fixes FK constraint)
-		const { data: existingProfile } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('id', session.user.id)
-			.single();
+		// Run all read-only setup queries in parallel up-front: profile presence,
+		// active season, submitter role. Form parsing happens in parallel too.
+		const [
+			formData,
+			{ data: existingProfile },
+			{ data: activeSeason },
+			{ data: submitterProfile }
+		] = await Promise.all([
+			request.formData(),
+			supabase.from('profiles').select('id, role').eq('id', session.user.id).maybeSingle(),
+			supabase.from('seasons').select('id, start_date').eq('is_active', true).maybeSingle(),
+			supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
+		]);
 
 		if (!existingProfile) {
 			const { error: profileError } = await supabase
@@ -36,7 +47,6 @@ export const actions: Actions = {
 			}
 		}
 
-		const formData = await request.formData();
 		const title = (formData.get('title') as string)?.trim();
 		const description = (formData.get('description') as string)?.trim();
 		const demo_url = (formData.get('demo_url') as string)?.trim();
@@ -85,13 +95,6 @@ export const actions: Actions = {
 			screenshot_urls.push(publicUrl.publicUrl);
 		}
 
-		// Get active season and calculate current week
-		const { data: activeSeason } = await supabase
-			.from('seasons')
-			.select('*')
-			.eq('is_active', true)
-			.single();
-
 		let seasonId = activeSeason?.id ?? null;
 		let week = 1;
 		if (activeSeason) {
@@ -112,12 +115,7 @@ export const actions: Actions = {
 			);
 		}
 
-		// Determine project type from submitter's role
-		const { data: submitterProfile } = await supabase
-			.from('profiles')
-			.select('role')
-			.eq('id', session.user.id)
-			.single();
+		// Project type derived from submitter's role (fetched in the parallel block above).
 		const projectType = submitterProfile?.role || 'community';
 
 		const { data, error } = await supabase.from('projects').insert({

@@ -2,12 +2,16 @@ import { fail, redirect } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase-admin';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { session, supabase }, url }) => {
+const PROFILE_COLUMNS =
+	'id, email, full_name, avatar_url, department, title, role, github_username, github_connected, total_xp, level, streak, is_admin, created_at';
+
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession }, url }) => {
+	const { session } = await safeGetSession();
 	if (!session) throw redirect(303, '/auth/login');
 
 	const [{ data: profile }, { data: githubConnection }] = await Promise.all([
-		supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-		supabase.from('github_connections').select('github_username, connected_at, scopes').eq('user_id', session.user.id).single()
+		supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', session.user.id).single(),
+		supabase.from('github_connections').select('github_username, connected_at, scopes').eq('user_id', session.user.id).maybeSingle()
 	]);
 
 	return {
@@ -18,7 +22,8 @@ export const load: PageServerLoad = async ({ locals: { session, supabase }, url 
 };
 
 export const actions: Actions = {
-	update: async ({ request, locals: { supabase, session } }) => {
+	update: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -73,18 +78,20 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	disconnectGithub: async ({ locals: { session } }) => {
+	disconnectGithub: async ({ locals: { safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		await supabaseAdmin
-			.from('github_connections')
-			.delete()
-			.eq('user_id', session.user.id);
-
-		await supabaseAdmin
-			.from('profiles')
-			.update({ github_username: null, github_connected: false })
-			.eq('id', session.user.id);
+		await Promise.all([
+			supabaseAdmin
+				.from('github_connections')
+				.delete()
+				.eq('user_id', session.user.id),
+			supabaseAdmin
+				.from('profiles')
+				.update({ github_username: null, github_connected: false })
+				.eq('id', session.user.id)
+		]);
 
 		return { success: true };
 	},

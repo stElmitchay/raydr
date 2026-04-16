@@ -3,24 +3,35 @@ import type { PageServerLoad, Actions } from './$types';
 import { parseRepoUrl } from '$lib/server/github';
 import { supabaseAdmin } from '$lib/server/supabase-admin';
 import { implementMilestone, generateImplementationPlan, executeImplementationPlan } from '$lib/server/ai-implement';
-import { runProjectAnalysis } from '$lib/server/analyze';
+import { triggerBackgroundAnalysis } from '$lib/server/analyze';
+import { adaptDpgStatus } from '$lib/server/dpg-status';
 
 const PROJECT_COLUMNS =
-	'id, title, description, problem_statement, solution_summary, project_goals, target_audience, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, demo_url, repo_url, screenshot_urls, video_url, tech_stack, ai_tools_used, team_members, submitted_by, season, week, demo_cycle, status, project_type, adoption_count, analysis_status, created_at, updated_at, submitter:profiles!submitted_by(id, full_name, avatar_url, department, title)';
+	'id, title, description, problem_statement, solution_summary, project_goals, target_audience, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, demo_url, repo_url, screenshot_urls, video_url, tech_stack, ai_tools_used, team_members, submitted_by, season, week, demo_cycle, status, project_type, adoption_count, analysis_status, created_at, updated_at, "dpgStatus", submitter:profiles!submitted_by(id, full_name, avatar_url, department, title)';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, session }, parent }) => {
+export const load: PageServerLoad = async ({ params, locals: { supabase }, parent }) => {
 	// Use parent layout's profile to derive isAdmin without an extra query.
-	const { profile: layoutProfile } = await parent();
+	// The layout already exposes session via cookie-only read, so reuse it.
+	const { profile: layoutProfile, session } = await parent();
 	const isAdmin = !!(layoutProfile as any)?.is_admin;
 
-	// Fire ALL queries in parallel — including the project itself.
+	// Fire public queries in parallel — project, comments, adoptions, analysis,
+	// github connection. Milestones and next_steps are gated behind canManage,
+	// so they run in a second batch only when the viewer is allowed to see them.
+	const ghConnPromise = session?.user?.id
+		? supabase
+				.from('github_connections')
+				.select('id')
+				.eq('user_id', session.user.id)
+				.maybeSingle()
+		: Promise.resolve({ data: null });
+
 	const [
 		{ data: project },
 		commentsResult,
 		adoptionsResult,
-		milestonesResult,
-		nextStepsResult,
-		analysisResult
+		analysisResult,
+		ghConnResult
 	] = await Promise.all([
 		supabase.from('projects').select(PROJECT_COLUMNS).eq('id', params.id).single(),
 		supabase
@@ -33,53 +44,59 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 			.select('id, user_id, adopted_at, adopter:profiles!user_id(id, full_name, avatar_url)')
 			.eq('project_id', params.id),
 		supabase
-			.from('milestones')
-			.select('id, title, description, category, xp_value, source, created_at')
-			.eq('project_id', params.id)
-			.order('created_at', { ascending: false }),
-		supabase
-			.from('next_steps')
-			.select('id, title, description, category, source, estimated_xp, completed, completed_at, implementation_status, plan_status, implementation_plan, pr_url, done_when, addresses, created_at')
-			.eq('project_id', params.id)
-			.order('completed', { ascending: true })
-			.order('created_at', { ascending: false }),
-		supabase
 			.from('ai_analyses')
-			.select('dpg_evaluation, idea_evaluation, synthesis')
+			.select('idea_evaluation, synthesis')
 			.eq('project_id', params.id)
 			.order('analyzed_at', { ascending: false })
 			.limit(1)
-			.maybeSingle()
+			.maybeSingle(),
+		ghConnPromise
 	]);
 
 	if (!project) {
 		throw error(404, 'Project not found');
 	}
 
-	// Staleness auto-recovery: if analysis has been 'analyzing' for over 5 minutes, reset to 'failed'
+	const githubConnected = !!ghConnResult.data;
+
+	const userId = session?.user?.id ?? null;
+	const isSubmitter = !!userId && (project as any).submitted_by === userId;
+	const isTeamMember = !!userId && ((project as any).team_members ?? []).includes(userId);
+	const canManage = isSubmitter || isTeamMember || isAdmin;
+	const canEdit = isSubmitter || isAdmin;
+
+	const [milestonesResult, nextStepsResult] = canManage
+		? await Promise.all([
+				supabase
+					.from('milestones')
+					.select('id, title, description, category, xp_value, source, created_at')
+					.eq('project_id', params.id)
+					.order('created_at', { ascending: false }),
+				supabase
+					.from('next_steps')
+					.select('id, title, description, category, source, estimated_xp, completed, completed_at, implementation_status, plan_status, implementation_plan, pr_url, done_when, addresses, created_at')
+					.eq('project_id', params.id)
+					.order('completed', { ascending: true })
+					.order('created_at', { ascending: false })
+			])
+		: [{ data: [] }, { data: [] }];
+
+	// Staleness auto-recovery: fire-and-forget so the user isn't waiting on an
+	// admin write just to render the page. The flipped flag is applied locally
+	// so the UI shows the correct state.
 	if (project.analysis_status === 'analyzing' && project.updated_at) {
 		const staleMs = Date.now() - new Date(project.updated_at).getTime();
 		if (staleMs > 5 * 60 * 1000) {
-			await supabaseAdmin
+			supabaseAdmin
 				.from('projects')
 				.update({ analysis_status: 'failed', updated_at: new Date().toISOString() })
-				.eq('id', project.id);
+				.eq('id', project.id)
+				.then(() => {});
 			(project as any).analysis_status = 'failed';
 		}
 	}
 
-	// Check if user has GitHub connected (for showing retry button)
-	let githubConnected = false;
-	if (session?.user?.id) {
-		const { data: ghConn } = await supabase
-			.from('github_connections')
-			.select('id')
-			.eq('user_id', session.user.id)
-			.maybeSingle();
-		githubConnected = !!ghConn;
-	}
-
-	// Team members — only fetch if needed (after we know the project exists)
+	// Team members has to wait — it depends on project.team_members.
 	const teamMembers =
 		(project as any).team_members?.length > 0
 			? (
@@ -97,20 +114,23 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, session
 		adoptions: adoptionsResult.data ?? [],
 		milestones: milestonesResult.data ?? [],
 		nextSteps: nextStepsResult.data ?? [],
-		dpgEvaluation: analysisResult.data?.dpg_evaluation ?? null,
+		dpgEvaluation: adaptDpgStatus((project as any).dpgStatus),
 		ideaEvaluation: analysisResult.data?.idea_evaluation ?? null,
 		synthesis: analysisResult.data?.synthesis ?? null,
 		// repoInfo and contributors are now fetched client-side via /projects/[id]/repo-info
 		repoInfo: null,
 		contributors: null,
-		userId: session?.user?.id ?? null,
+		userId,
 		isAdmin,
+		canManage,
+		canEdit,
 		githubConnected
 	};
 };
 
 export const actions: Actions = {
-	comment: async ({ request, params, locals: { supabase, session } }) => {
+	comment: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -133,7 +153,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	deleteComment: async ({ request, locals: { supabase, session } }) => {
+	deleteComment: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -149,7 +170,8 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	adopt: async ({ params, locals: { supabase, session } }) => {
+	adopt: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const { error: err } = await supabase.from('adoptions').insert({
@@ -166,23 +188,16 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	toggleFeatured: async ({ params, locals: { supabase, session } }) => {
+	toggleFeatured: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('is_admin')
-			.eq('id', session.user.id)
-			.single();
+		const [{ data: profile }, { data: project }] = await Promise.all([
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single(),
+			supabase.from('projects').select('status').eq('id', params.id).single()
+		]);
 
 		if (!profile?.is_admin) return fail(403, { error: 'Only admins can feature projects' });
-
-		const { data: project } = await supabase
-			.from('projects')
-			.select('status')
-			.eq('id', params.id)
-			.single();
-
 		if (!project) return fail(404, { error: 'Project not found' });
 
 		const newStatus = project.status === 'featured' ? 'submitted' : 'featured';
@@ -195,37 +210,31 @@ export const actions: Actions = {
 		return { success: true, featured: newStatus === 'featured' };
 	},
 
-	addMilestone: async ({ request, params, locals: { supabase, session } }) => {
+	addMilestone: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		// Check admin
-		const { data: profile } = await supabase
-			.from('profiles')
-			.select('is_admin')
-			.eq('id', session.user.id)
-			.single();
+		// Read form + run all 3 reads in parallel.
+		const [
+			formData,
+			{ data: profile },
+			{ data: season },
+			{ data: project }
+		] = await Promise.all([
+			request.formData(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single(),
+			supabase.from('seasons').select('id, start_date').eq('is_active', true).maybeSingle(),
+			supabase.from('projects').select('demo_cycle').eq('id', params.id).single()
+		]);
 
 		if (!profile?.is_admin) return fail(403, { error: 'Only admins can add milestones' });
 
-		const formData = await request.formData();
 		const title = (formData.get('title') as string)?.trim();
 		const description = (formData.get('description') as string)?.trim() || '';
 		const category = formData.get('category') as string;
 		const estimated_xp = parseInt(formData.get('estimated_xp') as string) || 50;
 
 		if (!title) return fail(400, { error: 'Title is required' });
-
-		const { data: season } = await supabase
-			.from('seasons')
-			.select('id, start_date')
-			.eq('is_active', true)
-			.single();
-
-		const { data: project } = await supabase
-			.from('projects')
-			.select('demo_cycle')
-			.eq('id', params.id)
-			.single();
 
 		await supabaseAdmin.from('next_steps').insert({
 			project_id: params.id,
@@ -241,40 +250,51 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	retryAnalysis: async ({ params, locals: { supabase, session } }) => {
+	retryAnalysis: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		const { data: project } = await supabase
-			.from('projects')
-			.select('submitted_by, repo_url, analysis_status')
-			.eq('id', params.id)
-			.single();
+		const [{ data: project }, { data: profile }] = await Promise.all([
+			supabase
+				.from('projects')
+				.select('submitted_by, team_members, repo_url, analysis_status')
+				.eq('id', params.id)
+				.single(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!project) return fail(404, { error: 'Project not found' });
 		if (!project.repo_url) return fail(400, { error: 'No repository URL' });
-		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 
-		try {
-			await runProjectAnalysis(params.id, session.user.id);
-		} catch {
-			return fail(500, { error: 'Analysis failed. Please check your GitHub connection and try again.' });
-		}
+		await supabaseAdmin
+			.from('projects')
+			.update({ analysis_status: 'analyzing', updated_at: new Date().toISOString() })
+			.eq('id', params.id);
 
+		triggerBackgroundAnalysis(params.id, session.user.id);
 		return { success: true };
 	},
 
-	updateProject: async ({ request, params, locals: { supabase, session } }) => {
+	updateProject: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
-		// Verify ownership
-		const { data: project } = await supabase
-			.from('projects')
-			.select('submitted_by')
-			.eq('id', params.id)
-			.single();
+		// Edits are stricter than management — only the submitter and admins
+		// can change project fields. Team members have read-level management
+		// access but shouldn't mutate the project metadata.
+		const [{ data: project }, { data: profile }] = await Promise.all([
+			supabase.from('projects').select('submitted_by').eq('id', params.id).single(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!project) return fail(404, { error: 'Project not found' });
-		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
+		const canEdit = project.submitted_by === session.user.id || !!profile?.is_admin;
+		if (!canEdit) return fail(403, { error: 'Not your project' });
 
 		const formData = await request.formData();
 		const field = formData.get('field') as string;
@@ -311,7 +331,8 @@ export const actions: Actions = {
 		return { success: true, updatedField: field };
 	},
 
-	implement: async ({ request, params, locals: { supabase, session } }) => {
+	implement: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -319,32 +340,21 @@ export const actions: Actions = {
 
 		if (!stepId) return fail(400, { error: 'Missing step ID' });
 
-		// Get the step
-		const { data: step } = await supabaseAdmin
-			.from('next_steps')
-			.select('*')
-			.eq('id', stepId)
-			.single();
+		// Step + project + GitHub token + admin check in parallel.
+		const [{ data: step }, { data: project }, { data: ghConn }, { data: profile }] = await Promise.all([
+			supabaseAdmin.from('next_steps').select('*').eq('id', stepId).single(),
+			supabase.from('projects').select('repo_url, submitted_by, team_members, title, description, tech_stack').eq('id', params.id).single(),
+			supabase.from('github_connections').select('access_token').eq('user_id', session.user.id).maybeSingle(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!step) return fail(404, { error: 'Step not found' });
-
-		// Get project
-		const { data: project } = await supabase
-			.from('projects')
-			.select('*')
-			.eq('id', params.id)
-			.single();
-
 		if (!project?.repo_url) return fail(400, { error: 'No repository URL' });
-		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
-
-		// Get GitHub token
-		const { data: ghConn } = await supabase
-			.from('github_connections')
-			.select('access_token')
-			.eq('user_id', session.user.id)
-			.single();
-
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 		if (!ghConn) return fail(400, { error: 'GitHub not connected' });
 
 		const parsed = parseRepoUrl(project.repo_url);
@@ -394,7 +404,8 @@ export const actions: Actions = {
 		}
 	},
 
-	planImplementation: async ({ request, params, locals: { supabase, session } }) => {
+	planImplementation: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -402,29 +413,20 @@ export const actions: Actions = {
 
 		if (!stepId) return fail(400, { error: 'Missing step ID' });
 
-		const { data: step } = await supabaseAdmin
-			.from('next_steps')
-			.select('*')
-			.eq('id', stepId)
-			.single();
+		const [{ data: step }, { data: project }, { data: ghConn }, { data: profile }] = await Promise.all([
+			supabaseAdmin.from('next_steps').select('*').eq('id', stepId).single(),
+			supabase.from('projects').select('repo_url, submitted_by, team_members, title, description, tech_stack').eq('id', params.id).single(),
+			supabase.from('github_connections').select('access_token').eq('user_id', session.user.id).maybeSingle(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!step) return fail(404, { error: 'Step not found' });
-
-		const { data: project } = await supabase
-			.from('projects')
-			.select('*')
-			.eq('id', params.id)
-			.single();
-
 		if (!project?.repo_url) return fail(400, { error: 'No repository URL' });
-		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
-
-		const { data: ghConn } = await supabase
-			.from('github_connections')
-			.select('access_token')
-			.eq('user_id', session.user.id)
-			.single();
-
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 		if (!ghConn) return fail(400, { error: 'GitHub not connected' });
 
 		const parsed = parseRepoUrl(project.repo_url);
@@ -473,7 +475,8 @@ export const actions: Actions = {
 		}
 	},
 
-	approveImplementation: async ({ request, params, locals: { supabase, session } }) => {
+	approveImplementation: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
@@ -481,30 +484,21 @@ export const actions: Actions = {
 
 		if (!stepId) return fail(400, { error: 'Missing step ID' });
 
-		const { data: step } = await supabaseAdmin
-			.from('next_steps')
-			.select('*')
-			.eq('id', stepId)
-			.single();
+		const [{ data: step }, { data: project }, { data: ghConn }, { data: profile }] = await Promise.all([
+			supabaseAdmin.from('next_steps').select('*').eq('id', stepId).single(),
+			supabase.from('projects').select('repo_url, submitted_by, team_members, title, description, tech_stack').eq('id', params.id).single(),
+			supabase.from('github_connections').select('access_token').eq('user_id', session.user.id).maybeSingle(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
 
 		if (!step) return fail(404, { error: 'Step not found' });
 		if (!step.implementation_plan) return fail(400, { error: 'No plan to approve' });
-
-		const { data: project } = await supabase
-			.from('projects')
-			.select('*')
-			.eq('id', params.id)
-			.single();
-
 		if (!project?.repo_url) return fail(400, { error: 'No repository URL' });
-		if (project.submitted_by !== session.user.id) return fail(403, { error: 'Not your project' });
-
-		const { data: ghConn } = await supabase
-			.from('github_connections')
-			.select('access_token')
-			.eq('user_id', session.user.id)
-			.single();
-
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 		if (!ghConn) return fail(400, { error: 'GitHub not connected' });
 
 		const parsed = parseRepoUrl(project.repo_url);
@@ -555,13 +549,26 @@ export const actions: Actions = {
 		}
 	},
 
-	rejectPlan: async ({ request, locals: { session } }) => {
+	rejectPlan: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
 		if (!session) return fail(401, { error: 'Not authenticated' });
 
 		const formData = await request.formData();
 		const stepId = formData.get('step_id') as string;
 
 		if (!stepId) return fail(400, { error: 'Missing step ID' });
+
+		const [{ data: project }, { data: profile }] = await Promise.all([
+			supabase.from('projects').select('submitted_by, team_members').eq('id', params.id).single(),
+			supabase.from('profiles').select('is_admin').eq('id', session.user.id).single()
+		]);
+
+		if (!project) return fail(404, { error: 'Project not found' });
+		const canManage =
+			project.submitted_by === session.user.id ||
+			(project.team_members ?? []).includes(session.user.id) ||
+			!!profile?.is_admin;
+		if (!canManage) return fail(403, { error: 'Not your project' });
 
 		await supabaseAdmin
 			.from('next_steps')

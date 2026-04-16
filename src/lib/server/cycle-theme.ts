@@ -3,27 +3,44 @@ import { supabaseAdmin } from './supabase-admin';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CycleTheme } from '$lib/types';
 
+// In-memory throttle so a flood of homepage visits before a theme exists
+// only triggers one background generation per (cycle, season) per process.
+const generating = new Set<string>();
+
+/**
+ * Fast read-only lookup. If the theme isn't cached yet, returns null and
+ * fires off background generation (fire-and-forget). NEVER blocks the caller
+ * on a Claude API call.
+ */
 export async function getCycleTheme(
 	supabase: SupabaseClient,
 	demoCycle: number,
 	seasonId: number | null
 ): Promise<CycleTheme | null> {
-	// Check if theme exists
 	const { data: existing } = await supabase
 		.from('cycle_themes')
 		.select('*')
 		.eq('demo_cycle', demoCycle)
 		.eq('season', seasonId)
-		.single();
+		.maybeSingle();
 
 	if (existing) return existing;
 
-	// Generate a new theme
-	try {
-		return await generateCycleTheme(supabase, demoCycle, seasonId);
-	} catch {
-		return null;
+	// Kick off generation in the background. On serverless hosts that kill
+	// the invocation at response time this may not complete — but because
+	// the result is persisted to the DB, the next invocation (after the
+	// theme is actually written) will serve it.
+	const key = `${seasonId ?? 'null'}:${demoCycle}`;
+	if (!generating.has(key)) {
+		generating.add(key);
+		generateCycleTheme(supabase, demoCycle, seasonId).catch((err) => {
+			console.error('Background cycle-theme generation failed:', err);
+		}).finally(() => {
+			generating.delete(key);
+		});
 	}
+
+	return null;
 }
 
 async function generateCycleTheme(

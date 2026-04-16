@@ -69,6 +69,15 @@
 		colorIdx: number;
 	}
 
+	function mixHex(a: string, b: string): string {
+		const pa = parseInt(a.slice(1), 16);
+		const pb = parseInt(b.slice(1), 16);
+		const r = Math.round(((pa >> 16) & 0xff) * 0.5 + ((pb >> 16) & 0xff) * 0.5);
+		const g = Math.round(((pa >> 8) & 0xff) * 0.5 + ((pb >> 8) & 0xff) * 0.5);
+		const bl = Math.round((pa & 0xff) * 0.5 + (pb & 0xff) * 0.5);
+		return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
+	}
+
 	$effect(() => {
 		if (!canvas) return;
 
@@ -99,6 +108,37 @@
 			typeof window !== 'undefined' &&
 			window.matchMedia &&
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+		// Precompute midpoint colors for every (layerA, layerB) pair so we don't
+		// allocate a new CanvasGradient per edge per frame. Also cache a palette
+		// of pre-rendered signal "glow" sprites (one per layer color) so the hot
+		// path can blit instead of calling createRadialGradient.
+		const EDGE_COLORS: string[][] = LAYERS.map((la) =>
+			LAYERS.map((lb) => mixHex(la.color, lb.color))
+		);
+
+		const GLOW_SIZE = 36;
+		const GLOW_SPRITES: HTMLCanvasElement[] = LAYERS.map((layer) => {
+			const off = document.createElement('canvas');
+			off.width = GLOW_SIZE;
+			off.height = GLOW_SIZE;
+			const octx = off.getContext('2d');
+			if (octx) {
+				const g = octx.createRadialGradient(
+					GLOW_SIZE / 2,
+					GLOW_SIZE / 2,
+					0,
+					GLOW_SIZE / 2,
+					GLOW_SIZE / 2,
+					GLOW_SIZE / 2
+				);
+				g.addColorStop(0, layer.color);
+				g.addColorStop(1, 'transparent');
+				octx.fillStyle = g;
+				octx.fillRect(0, 0, GLOW_SIZE, GLOW_SIZE);
+			}
+			return off;
+		});
 
 		function resize() {
 			const rect = canvas.parentElement?.getBoundingClientRect();
@@ -299,22 +339,18 @@
 			ctx.clearRect(0, 0, w, h);
 			const fade = mountFade;
 
+			ctx.lineWidth = 1;
 			for (const edge of edges) {
 				if (edge.opacity < 0.001) continue;
 				const na = nodes[edge.a];
 				const nb = nodes[edge.b];
 				if (!na || !nb) continue;
 
-				const grad = ctx.createLinearGradient(na.x, na.y, nb.x, nb.y);
-				grad.addColorStop(0, LAYERS[na.layerIdx].color);
-				grad.addColorStop(1, LAYERS[nb.layerIdx].color);
-
 				ctx.beginPath();
 				ctx.moveTo(na.x, na.y);
 				ctx.lineTo(nb.x, nb.y);
-				ctx.strokeStyle = grad;
+				ctx.strokeStyle = EDGE_COLORS[na.layerIdx][nb.layerIdx];
 				ctx.globalAlpha = edge.opacity * fade;
-				ctx.lineWidth = 1;
 				ctx.stroke();
 			}
 
@@ -330,12 +366,8 @@
 				const sy = na.y + (nb.y - na.y) * t;
 				const sigColor = LAYERS[sig.colorIdx].color;
 
-				const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 18);
-				glow.addColorStop(0, sigColor);
-				glow.addColorStop(1, 'transparent');
 				ctx.globalAlpha = 0.12 * fade;
-				ctx.fillStyle = glow;
-				ctx.fillRect(sx - 18, sy - 18, 36, 36);
+				ctx.drawImage(GLOW_SPRITES[sig.colorIdx], sx - GLOW_SIZE / 2, sy - GLOW_SIZE / 2);
 
 				ctx.beginPath();
 				ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
@@ -353,12 +385,15 @@
 				const color = LAYERS[node.layerIdx].color;
 
 				if (node.brightness > 0.1) {
-					const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 4);
-					glow.addColorStop(0, color);
-					glow.addColorStop(1, 'transparent');
+					const size = node.radius * 8;
 					ctx.globalAlpha = node.brightness * 0.3 * fade;
-					ctx.fillStyle = glow;
-					ctx.fillRect(node.x - node.radius * 4, node.y - node.radius * 4, node.radius * 8, node.radius * 8);
+					ctx.drawImage(
+						GLOW_SPRITES[node.layerIdx],
+						node.x - size / 2,
+						node.y - size / 2,
+						size,
+						size
+					);
 				}
 
 				ctx.beginPath();

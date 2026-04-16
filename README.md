@@ -13,15 +13,17 @@
 
 ### 📊 **AI-Powered Project Analysis**
 - **Code-aware analysis**: Reads actual source code diffs, file trees, and key files — not just commit messages. When a commit says "fix stuff" but the diff shows a new authentication system, Raydr detects the real milestone
-- **4-stage pipeline**: GitHub data collection → DPG evaluation → Idea evaluation → Synthesis. Each stage builds on the last to produce a complete picture of where a project stands
+- **3-stage pipeline**: GitHub data collection → Idea evaluation → Synthesis. DPG compliance is provided separately by the [`christex-foundation/dpg-evaluator`](https://github.com/christex-foundation/dpg-evaluator) Claude Code Skill (run out-of-band) and consumed as input to synthesis
 - **Evidence-based milestones**: Every detected milestone must cite specific files and code changes as evidence. No guessing from commit messages alone
 
 ### ✅ **Digital Public Goods Compliance**
-- **9-criteria evaluation** against the [DPG Standard](https://digitalpublicgoods.net/standard/), ported from the [christex-foundation/dpg-evaluator](https://github.com/christex-foundation/dpg-evaluator) framework
-- **Binary pass/fail per criterion** — no ambiguous numerical scores. Each indicator is either met or not, backed by code evidence
+- **9-criteria evaluation** against the [DPG Standard](https://digitalpublicgoods.net/standard/), produced by the [`christex-foundation/dpg-evaluator`](https://github.com/christex-foundation/dpg-evaluator) Claude Code Skill (Python; run from Claude Code, writes to `projects.dpgStatus` in Supabase)
+- **Single source of truth**: Raydr displays whatever the skill last wrote — there is no in-app DPG prompt
+- **Binary pass/fail per criterion** — backed by code:line evidence the skill collects
 - **"Code over claims" philosophy**: Documentation describing unimplemented features counts *against* the project, not for it
 - **Approval likelihood**: 7/9 passing = High, 4-6 = Medium, 0-3 = Low
 - **Priority actions**: Ranked list of the most impactful improvements to reach DPG qualification
+- **"Not yet evaluated" state** for projects the skill hasn't run against yet
 
 ### 🎯 **Actionable Next Steps**
 - **Single source of truth**: All next steps come from the synthesis stage, which has the full picture across idea evaluation, DPG compliance, and progress analysis
@@ -81,7 +83,7 @@
 - **Server-side rendering**: SvelteKit form actions for mutations, `+server.ts` routes for OAuth
 
 ### **AI & External APIs**
-- **[Claude API](https://docs.anthropic.com/)** (direct fetch, no SDK): Powers progress analysis, DPG evaluation, idea evaluation, synthesis, README generation, newsletter generation, and implementation code generation
+- **[Claude API](https://docs.anthropic.com/)** (direct fetch, no SDK): Powers progress analysis, idea evaluation, synthesis, README generation, newsletter generation, and implementation code generation. (DPG analysis is owned by the [`dpg-evaluator`](https://github.com/christex-foundation/dpg-evaluator) skill, not the web app.)
 - **[GitHub API](https://docs.github.com/en/rest)** (direct fetch, no Octokit): Repo info, commits, diffs, file tree, file contents, branch creation, and PR creation
 
 ### **AI Analysis Pipeline**
@@ -95,11 +97,12 @@ GitHub Data Collection
   ├── README content
   └── License info
          │
-         ├──→ DPG Evaluation (9 criteria, pass/fail, code evidence)  ──┐
+         ├──→ Idea Evaluation (6 dimensions, concept-only)  ───────────┐
          │                                                              │
-         ├──→ Idea Evaluation (6 dimensions, concept-only)             ├──→ Synthesis
-         │                                                              │     (sole source of next steps)
-         └──→ Progress Analysis (milestones from actual diffs)  ───────┘
+         └──→ Progress Analysis (milestones from actual diffs)  ───────┤
+                                                                        ├──→ Synthesis
+         (DPG status read from projects.dpgStatus, populated by  ──────┘     (sole source of next steps)
+          the dpg-evaluator skill out-of-band)
                                                                           │
                                                                           ▼
                                                                    Next Steps
@@ -199,8 +202,7 @@ raydr/
 │   │   ├── server/
 │   │   │   ├── analyze.ts          # Analysis pipeline orchestrator
 │   │   │   ├── claude.ts           # Claude API client + progress analysis
-│   │   │   ├── dpg.ts              # DPG compliance evaluation
-│   │   │   ├── dpg-criteria.ts     # 9 criterion prompt templates (from dpg-evaluator)
+│   │   │   ├── dpg-status.ts       # Adapter for the dpg-evaluator skill's projects.dpgStatus output
 │   │   │   ├── idea-eval.ts        # Idea/concept evaluation
 │   │   │   ├── synthesis.ts        # Evaluation synthesis + next step generation
 │   │   │   ├── ai-implement.ts     # Implementation plan generation + execution
@@ -241,11 +243,17 @@ raydr/
 
 1. **User clicks "Run Analysis"** on their project page
 2. **GitHub data is fetched** in parallel: repo metadata, commit history, code diffs (via compare API), full file tree, and key source files
-3. **DPG evaluation** runs against all 9 DPG Standard criteria using detailed per-criterion prompts, evaluating actual code — not documentation claims
-4. **Idea evaluation** scores the project concept across 6 dimensions (runs in parallel with DPG)
+3. **DPG status is read** from `projects.dpgStatus` — populated by the [`dpg-evaluator`](https://github.com/christex-foundation/dpg-evaluator) skill, run separately from Claude Code. If a project hasn't been evaluated yet, synthesis simply skips DPG considerations that cycle.
+4. **Idea evaluation** scores the project concept across 6 dimensions
 5. **Progress analysis** reads the actual code diffs to detect milestones, checking each against the previous analysis to avoid double-counting
-6. **Synthesis** combines all three evaluations into strengths, critical gaps, and 3-5 prioritized next steps — each with a concrete "done when" condition
+6. **Synthesis** combines DPG status, idea evaluation, and progress into strengths, critical gaps, and 3-5 prioritized next steps — each with a concrete "done when" condition
 7. **Results are stored**: milestones recorded, fulfilled goals marked complete with XP awarded, new next steps added alongside existing unfulfilled ones
+
+To populate or refresh DPG status for a project, run the skill from Claude Code:
+
+```bash
+python3 scripts/evaluate.py <project_id>   # writes projects.dpgStatus
+```
 
 ## 🛠️ How Implementation Plan Mode Works
 

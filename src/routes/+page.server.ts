@@ -48,11 +48,20 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 			.eq('is_active', true)
 			.order('end_date', { ascending: true })
 			.limit(3),
-		supabase
-			.from('projects')
-			.select(PROJECT_AGG_COLUMNS)
-			.in('status', ['submitted', 'featured'])
-			.order('created_at', { ascending: true }),
+		(season
+			? supabase
+					.from('projects')
+					.select(PROJECT_AGG_COLUMNS)
+					.eq('season', season.id)
+					.in('status', ['submitted', 'featured'])
+					.order('created_at', { ascending: true })
+					.limit(1000)
+			: supabase
+					.from('projects')
+					.select(PROJECT_AGG_COLUMNS)
+					.in('status', ['submitted', 'featured'])
+					.order('created_at', { ascending: true })
+					.limit(1000)),
 		supabase.rpc('get_totals'),
 		getCycleTheme(supabase, currentCycle, season?.id ?? null)
 	]);

@@ -44,8 +44,35 @@ export interface Project {
 	tool_request_id?: string;
 	created_at: string;
 	updated_at: string;
+	published_at?: string | null;
+	// Mirror of repo_url written by a Postgres generated column. The
+	// dpg-evaluator skill reads this name; do not write to it directly.
+	github?: string | null;
+	// Output of the dpg-evaluator skill — the sole source of DPG analysis.
+	dpgStatus?: DpgEvaluatorStatus | null;
+	matchedDPGs?: unknown;
 	// Joined data
 	submitter?: Profile;
+}
+
+// Schema written by the christex-foundation/dpg-evaluator skill. Mirrors
+// the JSON it produces so we can read it back unchanged.
+export interface DpgEvaluatorStatus {
+	status: Array<{
+		name: string;
+		overallScore: 0 | 1;
+		explanation: string;
+		recommendation: string;
+		peerComparison?: string;
+	}>;
+	approvalLikelihood?: 'low' | 'medium' | 'high';
+	priorityActions?: Array<{
+		priority: 'critical' | 'high' | 'medium' | 'low';
+		action: string;
+		criterion: number;
+	}>;
+	evaluatedAt?: string;
+	evaluationVersion?: string;
 }
 
 export interface Achievement {

@@ -43,11 +43,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return cached;
 	};
 
-	// Eagerly load session so form actions can access it
-	const { session, user } = await event.locals.safeGetSession();
-	event.locals.session = session;
-	event.locals.user = user;
-
+	// Note: previously this hook eagerly invoked safeGetSession() and
+	// populated event.locals.session/user, which forced an Auth round-trip on
+	// every request. We now leave it lazy — consumers that need a validated
+	// user must call `await event.locals.safeGetSession()` themselves. The
+	// layout uses cookie-only `supabase.auth.getSession()` for navbar profile
+	// lookups, which avoids the network call entirely.
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {
 			return name === 'content-range' || name === 'x-supabase-api-version';
