@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Project } from '$lib/types';
+	import { optimizeImage } from '$lib/image';
 
 	let { project }: { project: Project } = $props();
 
@@ -54,7 +55,7 @@
 		{#if project.submitter}
 			<div class="mt-3 flex items-center gap-2">
 				{#if project.submitter.avatar_url}
-					<img src={project.submitter.avatar_url} alt={project.submitter.full_name} class="h-5 w-5 rounded-full object-cover ring-1 ring-white/10" />
+					<img src={optimizeImage(project.submitter.avatar_url, 40)} alt={project.submitter.full_name} width="20" height="20" loading="lazy" decoding="async" class="h-5 w-5 rounded-full object-cover ring-1 ring-white/10" />
 				{:else}
 					<div class="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-semibold text-primary-light ring-1 ring-white/10">
 						{project.submitter.full_name?.charAt(0) ?? '?'}

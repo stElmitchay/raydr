@@ -2,6 +2,7 @@
 	import ProjectRow from '$lib/components/ui/ProjectRow.svelte';
 	import AchievementMark from '$lib/components/ui/AchievementMark.svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 	const profile = $derived(data.profile);
@@ -26,7 +27,7 @@
 	<ScrollReveal>
 		<div class="flex items-center gap-5 mb-8">
 			{#if profile.avatar_url}
-				<img src={profile.avatar_url} alt={profile.full_name} class="h-20 w-20 rounded-full object-cover border-2 border-text" />
+				<img src={optimizeImage(profile.avatar_url, 160)} alt={profile.full_name} width="80" height="80" loading="lazy" decoding="async" class="h-20 w-20 rounded-full object-cover border-2 border-text" />
 			{:else}
 				<div class="h-20 w-20 rounded-full bg-surface-alt flex items-center justify-center text-3xl font-serif text-text border-2 border-text">
 					{profile.full_name?.charAt(0) ?? '?'}

@@ -3,6 +3,15 @@
 
 	let { data } = $props();
 	let search = $state('');
+	let debouncedSearch = $state('');
+
+	$effect(() => {
+		const v = search;
+		const t = setTimeout(() => {
+			debouncedSearch = v;
+		}, 150);
+		return () => clearTimeout(t);
+	});
 
 	const toolMap = $derived.by(() => {
 		const map: Record<string, any[]> = {};
@@ -18,8 +27,8 @@
 	const techStack = $derived([...new Set(data.projects.flatMap((p: any) => p.tech_stack ?? []))]);
 
 	let filtered = $derived.by(() => {
-		if (!search) return data.projects;
-		const q = search.toLowerCase();
+		if (!debouncedSearch) return data.projects;
+		const q = debouncedSearch.toLowerCase();
 		return data.projects.filter((p: any) =>
 			p.title?.toLowerCase().includes(q) ||
 			p.replaces_tool?.toLowerCase().includes(q) ||

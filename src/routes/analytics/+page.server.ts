@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=300, stale-while-revalidate=900' });
+
 	// One projects query covers BOTH the time-series chart and the dept×tool
 	// heatmap — there's no reason to fetch the same table twice.
 	const [

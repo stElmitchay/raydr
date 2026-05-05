@@ -2,7 +2,11 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { parseRepoUrl, getRepoInfo, getContributors } from '$lib/server/github';
 
-export const GET: RequestHandler = async ({ params, locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ params, locals: { supabase }, setHeaders }) => {
+	// GitHub repo metadata changes infrequently — let the browser/CDN cache for
+	// 15 min so the project detail page doesn't re-hit GitHub on every visit.
+	setHeaders({ 'Cache-Control': 'private, max-age=900, stale-while-revalidate=3600' });
+
 	// Cookie-only — this endpoint just needs to know which user is asking so it
 	// can pick the right GitHub token. The result is per-user but not security-
 	// sensitive on its own (the token comes from a separate skinny lookup).

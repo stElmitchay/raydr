@@ -3,6 +3,7 @@
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
 	import ProjectRow from '$lib/components/ui/ProjectRow.svelte';
 	import NeuralAmbient from '$lib/components/ui/NeuralAmbient.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 	let showAnalytics = $state(false);
@@ -128,8 +129,12 @@
 							{@const isSvg = project.screenshot_urls[0].toLowerCase().endsWith('.svg')}
 							<div class="w-full aspect-[16/9] bg-surface-alt overflow-hidden mb-4">
 								<img
-									src={project.screenshot_urls[0]}
+									src={isSvg ? project.screenshot_urls[0] : optimizeImage(project.screenshot_urls[0], 800)}
 									alt={project.title}
+									width="640"
+									height="360"
+									loading="lazy"
+									decoding="async"
 									class="w-full h-full transition-transform duration-500 group-hover:scale-105 {isSvg ? 'object-contain p-4' : 'object-cover'}"
 								/>
 							</div>

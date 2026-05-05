@@ -406,11 +406,10 @@
 			ctx.globalAlpha = 1;
 		}
 
+		let running = false;
+
 		function tick() {
-			if (document.hidden) {
-				animId = requestAnimationFrame(tick);
-				return;
-			}
+			if (!running) return;
 
 			frame++;
 			mountFade = Math.min(1, mountFade + 0.016);
@@ -422,6 +421,35 @@
 
 			animId = requestAnimationFrame(tick);
 		}
+
+		function startLoop() {
+			if (running || prefersReducedMotion) return;
+			if (document.hidden || !inView) return;
+			running = true;
+			animId = requestAnimationFrame(tick);
+		}
+
+		function stopLoop() {
+			running = false;
+			if (animId) cancelAnimationFrame(animId);
+		}
+
+		let inView = true;
+		const visibilityObserver = new IntersectionObserver(
+			(entries) => {
+				inView = entries[0]?.isIntersecting ?? false;
+				if (inView) startLoop();
+				else stopLoop();
+			},
+			{ threshold: 0 }
+		);
+		visibilityObserver.observe(canvas);
+
+		function handleVisibility() {
+			if (document.hidden) stopLoop();
+			else startLoop();
+		}
+		document.addEventListener('visibilitychange', handleVisibility);
 
 		function handleClick(e: MouseEvent) {
 			const rect = canvas.getBoundingClientRect();
@@ -480,7 +508,7 @@
 
 		// Only animate if user hasn't requested reduced motion
 		if (!prefersReducedMotion) {
-			animId = requestAnimationFrame(tick);
+			startLoop();
 		} else {
 			// Render a single static frame so the canvas isn't blank
 			mountFade = 1;
@@ -488,8 +516,10 @@
 		}
 
 		return () => {
-			cancelAnimationFrame(animId);
+			stopLoop();
 			observer.disconnect();
+			visibilityObserver.disconnect();
+			document.removeEventListener('visibilitychange', handleVisibility);
 			canvas.removeEventListener('click', handleClick);
 			clearTimeout(tooltipTimeout);
 		};

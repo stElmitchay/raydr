@@ -3,7 +3,9 @@ import type { PageServerLoad } from './$types';
 const PROJECT_LIST_COLUMNS =
 	'id, title, description, status, demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used, screenshot_urls, created_at, project_type, adoption_count, submitter:profiles!submitted_by(id, full_name, department, avatar_url)';
 
-export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, url, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=60, stale-while-revalidate=300' });
+
 	const status = url.searchParams.get('status') || 'all';
 	const sort = url.searchParams.get('sort') || 'newest';
 	const search = url.searchParams.get('q') || '';

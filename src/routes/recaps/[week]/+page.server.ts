@@ -1,7 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase }, parent }) => {
+export const load: PageServerLoad = async ({ params, locals: { supabase }, parent, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=600, stale-while-revalidate=3600' });
+
 	const cycleNum = parseInt(params.week);
 	if (isNaN(cycleNum)) throw error(400, 'Invalid demo cycle number');
 

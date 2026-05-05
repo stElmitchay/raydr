@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=600, stale-while-revalidate=3600' });
+
 	const { data: activeSeason } = await supabase
 		.from('seasons')
 		.select('*')

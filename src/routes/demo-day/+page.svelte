@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { optimizeImage } from '$lib/image';
+
 	let { data } = $props();
 	const projects = $derived(data.projects);
 	const milestones = $derived(data.milestones);
@@ -80,10 +82,10 @@
 									<h3 class="text-base font-display font-semibold text-text">{project.title}</h3>
 									<p class="text-sm text-text-muted mt-0.5 line-clamp-1">{project.description}</p>
 									<div class="flex items-center gap-3 mt-2">
-										{#if project.submitter?.avatar_url}
-											<img src={project.submitter.avatar_url} alt="" class="h-5 w-5 rounded-full object-cover" />
+										{#if (project.submitter as any)?.avatar_url}
+											<img src={optimizeImage((project.submitter as any).avatar_url, 40)} alt="" width="20" height="20" loading="lazy" decoding="async" class="h-5 w-5 rounded-full object-cover" />
 										{/if}
-										<span class="text-xs text-text-secondary">{project.submitter?.full_name ?? 'Unknown'}</span>
+										<span class="text-xs text-text-secondary">{(project.submitter as any)?.full_name ?? 'Unknown'}</span>
 										{#if project.annual_cost_replaced}
 											<span class="text-xs font-mono text-success">${(project.annual_cost_replaced / 1000).toFixed(0)}k saved</span>
 										{/if}
@@ -118,7 +120,7 @@
 								{i + 1}
 							</span>
 							{#if builder.avatar_url}
-								<img src={builder.avatar_url} alt="" class="h-6 w-6 rounded-full object-cover" />
+								<img src={optimizeImage(builder.avatar_url, 48)} alt="" width="24" height="24" loading="lazy" decoding="async" class="h-6 w-6 rounded-full object-cover" />
 							{:else}
 								<div class="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary-light">
 									{builder.full_name?.charAt(0) ?? '?'}

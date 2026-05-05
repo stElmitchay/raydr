@@ -1,17 +1,28 @@
 <script lang="ts">
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 
 	let search = $state('');
+	let debouncedSearch = $state('');
 	let filterDept = $state('all');
 
 	const departments = $derived([...new Set(data.profiles.map((p: any) => p.department).filter(Boolean))]);
 
+	// Debounce search keystrokes — DOM rerenders for 100+ rows shouldn't fire on every char.
+	$effect(() => {
+		const v = search;
+		const t = setTimeout(() => {
+			debouncedSearch = v;
+		}, 150);
+		return () => clearTimeout(t);
+	});
+
 	let filtered = $derived.by(() => {
 		let result = data.profiles;
-		if (search) {
-			const q = search.toLowerCase();
+		if (debouncedSearch) {
+			const q = debouncedSearch.toLowerCase();
 			result = result.filter((p: any) => p.full_name?.toLowerCase().includes(q) || p.department?.toLowerCase().includes(q));
 		}
 		if (filterDept !== 'all') {
@@ -50,7 +61,7 @@
 					<a href="/profiles/{profile.id}" class="group bg-bg p-5 hover:bg-surface-alt transition-colors">
 						<div class="flex items-center gap-3 mb-4">
 							{#if profile.avatar_url}
-								<img src={profile.avatar_url} alt={profile.full_name} class="h-9 w-9 rounded-full object-cover" />
+								<img src={optimizeImage(profile.avatar_url, 72)} alt={profile.full_name} width="36" height="36" loading="lazy" decoding="async" class="h-9 w-9 rounded-full object-cover" />
 							{:else}
 								<div class="h-9 w-9 rounded-full bg-surface-alt flex items-center justify-center text-sm font-serif text-text">
 									{profile.full_name?.charAt(0) ?? '?'}

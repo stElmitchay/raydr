@@ -1,4 +1,5 @@
 const GITHUB_API = 'https://api.github.com';
+const DEFAULT_TIMEOUT_MS = 10_000;
 
 function headers(token: string) {
 	return {
@@ -6,6 +7,27 @@ function headers(token: string) {
 		Accept: 'application/vnd.github+json',
 		'X-GitHub-Api-Version': '2022-11-28'
 	};
+}
+
+// Wraps fetch with an AbortController-driven timeout so a hung GitHub
+// endpoint can't pin a serverless function to its platform-level limit.
+async function ghFetch(
+	url: string,
+	init: RequestInit = {},
+	timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(url, { ...init, signal: controller.signal });
+	} catch (err) {
+		if ((err as Error).name === 'AbortError') {
+			throw new GitHubError(504, `GitHub request timed out after ${timeoutMs}ms: ${url}`);
+		}
+		throw err;
+	} finally {
+		clearTimeout(timer);
+	}
 }
 
 export function parseRepoUrl(url: string): { owner: string; repo: string } | null {
@@ -36,9 +58,9 @@ export interface RepoInfo {
 
 export async function getRepoInfo(token: string, owner: string, repo: string): Promise<RepoInfo> {
 	const [repoRes, langRes, readmeRes] = await Promise.all([
-		fetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers: headers(token) }),
-		fetch(`${GITHUB_API}/repos/${owner}/${repo}/languages`, { headers: headers(token) }),
-		fetch(`${GITHUB_API}/repos/${owner}/${repo}/readme`, { headers: headers(token) })
+		ghFetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers: headers(token) }),
+		ghFetch(`${GITHUB_API}/repos/${owner}/${repo}/languages`, { headers: headers(token) }),
+		ghFetch(`${GITHUB_API}/repos/${owner}/${repo}/readme`, { headers: headers(token) })
 	]);
 
 	if (!repoRes.ok) {
@@ -78,7 +100,7 @@ export async function getCommitsSince(
 	repo: string,
 	since: Date
 ): Promise<CommitData[]> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/commits?since=${since.toISOString()}&per_page=100`,
 		{ headers: headers(token) }
 	);
@@ -92,7 +114,7 @@ export async function getCommitsSince(
 	// Fetch individual commit stats (additions/deletions) in parallel, limited to 30
 	const detailed = await Promise.all(
 		commits.slice(0, 30).map(async (c: any) => {
-			const detailRes = await fetch(
+			const detailRes = await ghFetch(
 				`${GITHUB_API}/repos/${owner}/${repo}/commits/${c.sha}`,
 				{ headers: headers(token) }
 			);
@@ -116,7 +138,7 @@ export async function getContributors(
 	owner: string,
 	repo: string
 ): Promise<Array<{ login: string; contributions: number; avatar_url: string }>> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/contributors?per_page=20`,
 		{ headers: headers(token) }
 	);
@@ -130,7 +152,7 @@ export async function getReadmeContent(
 	owner: string,
 	repo: string
 ): Promise<string | null> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/readme`,
 		{
 			headers: {
@@ -152,7 +174,7 @@ export async function createBranch(
 	fromRef: string
 ): Promise<void> {
 	// Get the SHA of the source ref
-	const refRes = await fetch(
+	const refRes = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/git/ref/heads/${fromRef}`,
 		{ headers: headers(token) }
 	);
@@ -165,7 +187,7 @@ export async function createBranch(
 	const sha = refData.object.sha;
 
 	// Create the new branch
-	const createRes = await fetch(
+	const createRes = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/git/refs`,
 		{
 			method: 'POST',
@@ -192,7 +214,7 @@ export async function createOrUpdateFile(
 	branch: string
 ): Promise<void> {
 	// Check if file exists to get its SHA (needed for updates)
-	const existingRes = await fetch(
+	const existingRes = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
 		{ headers: headers(token) }
 	);
@@ -208,7 +230,7 @@ export async function createOrUpdateFile(
 		body.sha = existing.sha;
 	}
 
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`,
 		{
 			method: 'PUT',
@@ -234,7 +256,7 @@ export async function createPullRequest(
 	repo: string,
 	opts: { title: string; body: string; head: string; base: string }
 ): Promise<PullRequestResult> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/pulls`,
 		{
 			method: 'POST',
@@ -256,9 +278,11 @@ export async function getRepoTree(
 	repo: string,
 	branch: string
 ): Promise<string[]> {
-	const res = await fetch(
+	// Recursive tree on a large monorepo can be 10MB+; allow more breathing room.
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
-		{ headers: headers(token) }
+		{ headers: headers(token) },
+		30_000
 	);
 
 	if (!res.ok) {
@@ -282,7 +306,7 @@ export async function getFileContent(
 		? `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${ref}`
 		: `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`;
 
-	const res = await fetch(url, {
+	const res = await ghFetch(url, {
 		headers: {
 			...headers(token),
 			Accept: 'application/vnd.github.raw+json'
@@ -318,9 +342,10 @@ export async function getCompareData(
 	base: string,
 	head: string
 ): Promise<CompareData> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/compare/${base}...${head}`,
-		{ headers: headers(token) }
+		{ headers: headers(token) },
+		20_000
 	);
 
 	if (!res.ok) {
@@ -375,9 +400,10 @@ export async function getRepoTreeWithSizes(
 	repo: string,
 	branch: string
 ): Promise<TreeEntry[]> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
-		{ headers: headers(token) }
+		{ headers: headers(token) },
+		30_000
 	);
 
 	if (!res.ok) {
@@ -464,7 +490,7 @@ export async function getLicenseInfo(
 	owner: string,
 	repo: string
 ): Promise<{ license: string | null; spdx_id: string | null }> {
-	const res = await fetch(
+	const res = await ghFetch(
 		`${GITHUB_API}/repos/${owner}/${repo}/license`,
 		{ headers: headers(token) }
 	);

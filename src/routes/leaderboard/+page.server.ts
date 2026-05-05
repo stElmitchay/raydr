@@ -1,18 +1,22 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, url, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=120, stale-while-revalidate=600' });
+
 	const type = url.searchParams.get('type') || 'all';
 
 	// Skinny column selects + parallel queries.
 	const profilesPromise = supabase
 		.from('profiles')
 		.select('id, full_name, avatar_url, department, level, total_xp, role')
-		.order('total_xp', { ascending: false });
+		.order('total_xp', { ascending: false })
+		.limit(100);
 
 	let projectsQuery = supabase
 		.from('projects')
 		.select('id, title, replaces_tool, annual_cost_replaced, estimated_hours_saved_weekly, submitted_by, project_type')
-		.order('annual_cost_replaced', { ascending: false });
+		.order('annual_cost_replaced', { ascending: false })
+		.limit(200);
 
 	if (type !== 'all') {
 		projectsQuery = projectsQuery.eq('project_type', type);

@@ -19,19 +19,19 @@ export async function getDemoDayData(supabase: SupabaseClient, seasonId: number 
 	] = await Promise.all([
 		supabase
 			.from('projects')
-			.select('*, submitter:profiles!submitted_by(*)')
+			.select('id, title, description, demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, project_type, status, created_at, submitter:profiles!submitted_by(id, full_name, department, avatar_url)')
 			.eq('demo_cycle', demoCycle)
 			.in('status', ['submitted', 'featured'])
 			.order('created_at', { ascending: false }),
 		supabase
 			.from('milestones')
-			.select('*, project:projects(title)')
+			.select('id, title, description, category, source, xp_value, created_at, project:projects(title)')
 			.eq('demo_cycle', demoCycle)
 			.order('created_at', { ascending: false })
 			.limit(30),
 		supabase
 			.from('profiles')
-			.select('*')
+			.select('id, full_name, avatar_url, department, level, total_xp')
 			.order('total_xp', { ascending: false })
 			.limit(10)
 	]);

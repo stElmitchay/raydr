@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data, form } = $props();
 	const profile = $derived(data.profile);
@@ -62,9 +63,9 @@
 			<div class="flex items-center gap-6">
 				<div class="relative group">
 					{#if avatarPreview}
-						<img src={avatarPreview} alt="Preview" class="h-20 w-20 rounded-full object-cover border border-border" />
+						<img src={avatarPreview} alt="Preview" width="80" height="80" class="h-20 w-20 rounded-full object-cover border border-border" />
 					{:else if profile?.avatar_url}
-						<img src={profile.avatar_url} alt={profile.full_name} class="h-20 w-20 rounded-full object-cover border border-border" />
+						<img src={optimizeImage(profile.avatar_url, 160)} alt={profile.full_name} width="80" height="80" loading="lazy" decoding="async" class="h-20 w-20 rounded-full object-cover border border-border" />
 					{:else}
 						<div class="h-20 w-20 rounded-full bg-surface-alt flex items-center justify-center text-2xl font-serif text-text border border-border">
 							{profile?.full_name?.charAt(0) || '?'}
@@ -107,7 +108,7 @@
 		<ScrollReveal>
 			<div class="flex items-center gap-6 mb-8">
 				{#if profile?.avatar_url}
-					<img src={profile.avatar_url} alt={profile.full_name} class="h-24 w-24 rounded-full object-cover border-2 border-text" />
+					<img src={optimizeImage(profile.avatar_url, 192)} alt={profile.full_name} width="96" height="96" loading="lazy" decoding="async" class="h-24 w-24 rounded-full object-cover border-2 border-text" />
 				{:else}
 					<div class="h-24 w-24 rounded-full bg-surface-alt flex items-center justify-center text-3xl font-serif text-text border-2 border-text">
 						{profile?.full_name?.charAt(0) || '?'}

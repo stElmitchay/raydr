@@ -61,10 +61,7 @@
 </script>
 
 <div class="flex flex-col" bind:this={containerEl}>
-	<span
-		class="heading-display text-[clamp(3.5rem,10vw,7rem)] text-text"
-		style="animation: metric-pulse 4s ease-in-out infinite"
-	>
+	<span class="heading-display text-[clamp(3.5rem,10vw,7rem)] text-text">
 		{formatValue(displayValue)}
 	</span>
 	{#if label}

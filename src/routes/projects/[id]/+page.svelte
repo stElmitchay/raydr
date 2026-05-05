@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { onMount, untrack } from 'svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 	const project = $derived(data.project);
@@ -469,7 +470,7 @@
 									<span class="heading-section">Contributors ({contributors.length})</span>
 									<div class="flex -space-x-1.5 ml-2">
 										{#each contributors.slice(0, 8) as contrib}
-											<img src={contrib.avatar_url} alt={contrib.login} title="{contrib.login} ({contrib.contributions} commits)" class="h-5 w-5 rounded-full object-cover border border-bg" />
+											<img src={contrib.avatar_url} alt={contrib.login} title="{contrib.login} ({contrib.contributions} commits)" width="20" height="20" loading="lazy" decoding="async" class="h-5 w-5 rounded-full object-cover border border-bg" />
 										{/each}
 									</div>
 								</div>
@@ -866,7 +867,7 @@
 					{#each project.screenshot_urls as url}
 						{@const isSvg = url.toLowerCase().endsWith('.svg')}
 						<button onclick={() => lightboxUrl = url} class="flex-shrink-0 w-[70vw] md:w-[45vw] overflow-hidden border border-border hover:border-border-strong transition-colors {isSvg ? 'bg-white/5' : ''}">
-							<img src={url} alt="Screenshot" class="w-full h-56 md:h-64 {isSvg ? 'object-contain p-4' : 'object-cover'}" />
+							<img src={isSvg ? url : optimizeImage(url, 1000)} alt="Screenshot" width="800" height="450" loading="lazy" decoding="async" class="w-full h-56 md:h-64 {isSvg ? 'object-contain p-4' : 'object-cover'}" />
 						</button>
 					{/each}
 				</div>
@@ -883,7 +884,7 @@
 					{#each adoptions.slice(0, 8) as adoption}
 						{@const adopter = (adoption.adopter as any)}
 						{#if adopter?.avatar_url}
-							<img src={adopter.avatar_url} alt={adopter.full_name} class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
+							<img src={optimizeImage(adopter.avatar_url, 64)} alt={adopter.full_name} width="32" height="32" loading="lazy" decoding="async" class="h-8 w-8 rounded-full object-cover border-2 border-bg" />
 						{:else}
 							<div class="h-8 w-8 rounded-full bg-surface-alt flex items-center justify-center text-xs font-medium text-text border-2 border-bg">
 								{adopter?.full_name?.charAt(0) ?? '?'}
@@ -907,7 +908,7 @@
 					{#each teamMembers as member}
 						<a href="/profiles/{member.id}" class="flex items-center gap-3 group">
 							{#if member.avatar_url}
-								<img src={member.avatar_url} alt={member.full_name} class="h-9 w-9 rounded-full object-cover" />
+								<img src={optimizeImage(member.avatar_url, 72)} alt={member.full_name} width="36" height="36" loading="lazy" decoding="async" class="h-9 w-9 rounded-full object-cover" />
 							{:else}
 								<div class="h-9 w-9 rounded-full bg-surface-alt flex items-center justify-center text-sm font-medium text-text">
 									{member.full_name?.charAt(0) ?? '?'}

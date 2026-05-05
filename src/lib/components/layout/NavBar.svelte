@@ -2,6 +2,7 @@
 	import type { Profile } from '$lib/types';
 	import type { Session } from '@supabase/supabase-js';
 	import Logo from '$lib/components/ui/Logo.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { onToggleMenu, user = null, session = null }: {
 		onToggleMenu: () => void;
@@ -24,7 +25,7 @@
 			</a>
 			<a href="/profile" class="flex items-center justify-center w-11 h-11">
 				{#if user?.avatar_url}
-					<img src={user.avatar_url} alt={user.full_name} class="h-9 w-9 rounded-full object-cover" />
+					<img src={optimizeImage(user.avatar_url, 72)} alt={user.full_name} width="36" height="36" loading="lazy" decoding="async" class="h-9 w-9 rounded-full object-cover" />
 				{:else}
 					<div class="h-9 w-9 rounded-full bg-surface-alt flex items-center justify-center text-sm font-semibold text-text">
 						{user?.full_name?.charAt(0) ?? '?'}

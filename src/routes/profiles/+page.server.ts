@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=120, stale-while-revalidate=600' });
+
 	// Skinny columns + parallel queries.
 	const [{ data: profiles }, { data: projects }] = await Promise.all([
 		supabase

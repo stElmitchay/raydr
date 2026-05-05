@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, setHeaders }) => {
+	setHeaders({ 'Cache-Control': 'private, max-age=300, stale-while-revalidate=900' });
+
 	// Reuse the existing get_department_stats RPC instead of fetching all projects
 	// and aggregating in JavaScript.
 	const [{ data: challenges }, { data: deptStats }] = await Promise.all([

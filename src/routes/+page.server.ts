@@ -7,13 +7,12 @@ import { getCycleTheme } from '$lib/server/cycle-theme';
 const PROJECT_CARD_COLUMNS =
 	'id, title, description, status, demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used, screenshot_urls, created_at, project_type, submitter:profiles!submitted_by(id, full_name, department, avatar_url)';
 
-const PROJECT_AGG_COLUMNS =
-	'demo_cycle, week, annual_cost_replaced, estimated_hours_saved_weekly, ai_tools_used, status, submitter:profiles!submitted_by(department)';
-
-export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => {
+export const load: PageServerLoad = async ({ locals: { supabase }, parent, setHeaders }) => {
 	if (isDemoDay()) {
 		throw redirect(302, '/demo-day');
 	}
+
+	setHeaders({ 'Cache-Control': 'private, max-age=60, stale-while-revalidate=300' });
 
 	// Reuse the season already loaded by the root layout instead of re-fetching.
 	const { currentSeason: season } = await parent();
@@ -26,7 +25,7 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 		{ data: departmentStats },
 		{ data: recentProjects },
 		{ data: activeChallenges },
-		{ data: aggProjects },
+		{ data: analytics },
 		{ data: totals },
 		cycleTheme
 	] = await Promise.all([
@@ -48,59 +47,17 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 			.eq('is_active', true)
 			.order('end_date', { ascending: true })
 			.limit(3),
-		(season
-			? supabase
-					.from('projects')
-					.select(PROJECT_AGG_COLUMNS)
-					.eq('season', season.id)
-					.in('status', ['submitted', 'featured'])
-					.order('created_at', { ascending: true })
-					.limit(1000)
-			: supabase
-					.from('projects')
-					.select(PROJECT_AGG_COLUMNS)
-					.in('status', ['submitted', 'featured'])
-					.order('created_at', { ascending: true })
-					.limit(1000)),
+		// Server-side aggregation in Postgres (migration-010). Ships ~few KB
+		// of JSON instead of fetching up to 1000 project rows for client-side
+		// reduction.
+		supabase.rpc('get_home_analytics', { p_season_id: season?.id ?? null }),
 		supabase.rpc('get_totals'),
 		getCycleTheme(supabase, currentCycle, season?.id ?? null)
 	]);
 
-	// Server-side aggregation for analytics charts (was previously $derived.by on the client)
-	const projectsForAgg = aggProjects ?? [];
-
-	const weekMap = new Map<number, { week: number; submissions: number; costSaved: number; hoursSaved: number }>();
-	const aiToolCounts: Record<string, number> = {};
-	const deptToolMatrix: Record<string, Record<string, number>> = {};
-
-	for (const p of projectsForAgg) {
-		const w = (p as any).demo_cycle ?? (p as any).week ?? 0;
-		if (!weekMap.has(w)) {
-			weekMap.set(w, { week: w, submissions: 0, costSaved: 0, hoursSaved: 0 });
-		}
-		const bucket = weekMap.get(w)!;
-		bucket.submissions++;
-		bucket.costSaved += (p as any).annual_cost_replaced ?? 0;
-		bucket.hoursSaved += (p as any).estimated_hours_saved_weekly ?? 0;
-
-		const dept = ((p as any).submitter as any)?.department || 'Unknown';
-		const tools = ((p as any).ai_tools_used ?? []) as string[];
-		for (const tool of tools) {
-			aiToolCounts[tool] = (aiToolCounts[tool] || 0) + 1;
-			if (!deptToolMatrix[dept]) deptToolMatrix[dept] = {};
-			deptToolMatrix[dept][tool] = (deptToolMatrix[dept][tool] || 0) + 1;
-		}
-	}
-
-	const weeklyData = Array.from(weekMap.values()).sort((a, b) => a.week - b.week);
-
-	let cumulative = 0;
-	const cumulativeData = weeklyData.map((w) => {
-		cumulative += w.costSaved;
-		return { week: w.week, total: cumulative };
-	});
-
-	const aiToolCountsArray = Object.entries(aiToolCounts).sort((a, b) => b[1] - a[1]);
+	const weeklyData = (analytics as any)?.weeklyData ?? [];
+	const cumulativeData = (analytics as any)?.cumulativeData ?? [];
+	const aiToolCountsArray = (analytics as any)?.aiToolCountsArray ?? [];
 
 	return {
 		currentCycle,

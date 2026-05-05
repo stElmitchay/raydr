@@ -56,9 +56,16 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 			.eq('id', projectId)
 	]);
 
-	if (!project?.repo_url) return;
+	let finalStatus: 'completed' | 'failed' | 'idle' = 'failed';
 
 	try {
+		if (!project?.repo_url) {
+			// Nothing to analyze — flip back to idle so we don't leave the spinner
+			// running. (Previously this `return`-ed silently with status='analyzing'.)
+			finalStatus = 'idle';
+			return;
+		}
+
 		if (!ghConn?.access_token) throw new Error('GitHub not connected — no access token found');
 
 		const parsed = parseRepoUrl(project.repo_url);
@@ -290,34 +297,28 @@ export async function runProjectAnalysis(projectId: string, userId: string): Pro
 			}
 		}
 
-		// Mark as completed
-		await supabaseAdmin
-			.from('projects')
-			.update({ analysis_status: 'completed', updated_at: new Date().toISOString() })
-			.eq('id', projectId);
-	} catch (err) {
-		// Reset status so the project isn't stuck in 'analyzing' forever
-		await supabaseAdmin
-			.from('projects')
-			.update({ analysis_status: 'failed', updated_at: new Date().toISOString() })
-			.eq('id', projectId);
-		throw err;
+		finalStatus = 'completed';
+	} finally {
+		// Always release the 'analyzing' status — even on early return or
+		// unexpected throw — so the UI never sees a stuck spinner.
+		try {
+			await supabaseAdmin
+				.from('projects')
+				.update({ analysis_status: finalStatus, updated_at: new Date().toISOString() })
+				.eq('id', projectId);
+		} catch (statusErr) {
+			console.error(`Failed to reset analysis_status for project ${projectId}:`, statusErr);
+		}
 	}
 }
 
 /**
  * Fire-and-forget wrapper — kicks off analysis without blocking.
+ * runProjectAnalysis owns its own finally-block that resets analysis_status,
+ * so this just needs to swallow + log the error.
  */
 export function triggerBackgroundAnalysis(projectId: string, userId: string): void {
-	runProjectAnalysis(projectId, userId).catch(async (err) => {
+	runProjectAnalysis(projectId, userId).catch((err) => {
 		console.error(`Background analysis failed for project ${projectId}:`, err);
-		try {
-			await supabaseAdmin
-				.from('projects')
-				.update({ analysis_status: 'failed' })
-				.eq('id', projectId);
-		} catch {
-			// Ignore failure to update status
-		}
 	});
 }

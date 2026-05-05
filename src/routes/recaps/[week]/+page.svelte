@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ProjectRow from '$lib/components/ui/ProjectRow.svelte';
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 	const season = $derived(data.season);
@@ -49,7 +50,7 @@
 				<h2 class="font-serif text-xl text-text">{winner.title}</h2>
 				<div class="mt-2 flex items-center gap-3">
 					{#if winner.submitter?.avatar_url}
-						<img src={winner.submitter.avatar_url} alt={winner.submitter.full_name} class="h-5 w-5 rounded-full object-cover" />
+						<img src={optimizeImage(winner.submitter.avatar_url, 40)} alt={winner.submitter.full_name} width="20" height="20" loading="lazy" decoding="async" class="h-5 w-5 rounded-full object-cover" />
 					{:else}
 						<div class="h-5 w-5 rounded-full bg-surface-alt flex items-center justify-center text-[10px] font-medium text-text">
 							{winner.submitter?.full_name?.charAt(0) ?? '?'}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ScrollReveal from '$lib/components/ui/ScrollReveal.svelte';
+	import { optimizeImage } from '$lib/image';
 
 	let { data } = $props();
 	let view = $state<'builders' | 'projects'>('builders');
@@ -40,7 +41,7 @@
 								<span class="text-data text-3xl md:text-4xl {i === 1 ? 'text-text' : 'text-text-muted'}">{rankLabels[i]}</span>
 								<div class="mt-4">
 									{#if builder.avatar_url}
-										<img src={builder.avatar_url} alt={builder.full_name} class="h-14 w-14 mx-auto rounded-full object-cover {i === 1 ? 'border-2 border-text' : ''}" />
+										<img src={optimizeImage(builder.avatar_url, 112)} alt={builder.full_name} width="56" height="56" loading="lazy" decoding="async" class="h-14 w-14 mx-auto rounded-full object-cover {i === 1 ? 'border-2 border-text' : ''}" />
 									{:else}
 										<div class="h-14 w-14 mx-auto rounded-full bg-surface-alt flex items-center justify-center text-xl font-semibold text-text {i === 1 ? 'border-2 border-text' : ''}">
 											{builder.full_name?.charAt(0) ?? '?'}
@@ -90,7 +91,7 @@
 							<td class="px-4 py-3.5">
 								<a href="/profiles/{builder.id}" class="flex items-center gap-2.5 group">
 									{#if builder.avatar_url}
-										<img src={builder.avatar_url} alt={builder.full_name} class="h-7 w-7 rounded-full object-cover" />
+										<img src={optimizeImage(builder.avatar_url, 56)} alt={builder.full_name} width="28" height="28" loading="lazy" decoding="async" class="h-7 w-7 rounded-full object-cover" />
 									{:else}
 										<div class="h-7 w-7 rounded-full bg-surface-alt flex items-center justify-center text-xs font-medium text-text">
 											{builder.full_name?.charAt(0) ?? '?'}
